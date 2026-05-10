@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>セカンドライフ逆算プランナー</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar__inner">
+      <div>
+        <p class="eyebrow">Matsumoto Accounting</p>
+        <h1>セカンドライフ逆算プランナー</h1>
+      </div>
+      <div class="topbar__actions">
+        <button class="ghost-button" id="saveButton" type="button">保存</button>
+        <button class="ghost-button" id="resetButton" type="button">初期化</button>
+        <button class="primary-button" id="printButton" type="button">印刷</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="app-shell">
+    <section class="input-column" aria-label="入力">
+      <section class="panel vision-panel">
+        <div class="section-title">
+          <span class="section-index">01</span>
+          <div>
+            <h2>ありたい老後</h2>
+            <p>生活水準ではなく、先に実現したい状態を置きます。</p>
+          </div>
+        </div>
+        <label class="textarea-field">
+          <span>老後はこうしたい・こうありたい</span>
+          <textarea data-field="vision" rows="4">夫婦で健康に過ごし、年に数回は旅行へ行ける状態を維持したい。会社に過度に依存せず、退職後の生活費を見える化しておきたい。</textarea>
+        </label>
+      </section>
+
+      <section class="panel">
+        <div class="section-title">
+          <span class="section-index">02</span>
+          <div>
+            <h2>期間の前提</h2>
+            <p>現役から引退、平均余命までをつなげます。</p>
+          </div>
+        </div>
+        <div class="field-grid compact">
+          <label><span>現在年齢</span><input type="number" data-field="currentAge" min="20" max="90" value="50"><em>歳</em></label>
+          <label><span>引退予定年齢</span><input type="number" data-field="retireAge" min="40" max="95" value="65"><em>歳</em></label>
+          <label><span>平均余命の目安</span><input type="number" data-field="lifeAge" min="60" max="110" value="88"><em>歳</em></label>
+          <label><span>公的年金開始</span><input type="number" data-field="pensionStartAge" min="60" max="75" value="65"><em>歳</em></label>
+          <label><span>配偶者</span><select data-field="hasSpouse"><option value="1">あり</option><option value="0">なし</option></select></label>
+          <label><span>配偶者年齢</span><input type="number" data-field="spouseAge" min="20" max="100" value="48"><em>歳</em></label>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="section-title">
+          <span class="section-index">03</span>
+          <div>
+            <h2>老後の支出</h2>
+            <p>基本生活費と、夢・健康・家族支援を分けて置きます。</p>
+          </div>
+        </div>
+        <div class="field-grid">
+          <label><span>基本生活費</span><input type="number" data-field="monthlyLife" min="0" value="45"><em>万円/月</em></label>
+          <label><span>住居費</span><input type="number" data-field="monthlyHousing" min="0" value="0"><em>万円/月</em></label>
+          <label><span>医療・健康維持</span><input type="number" data-field="annualMedical" min="0" value="35"><em>万円/年</em></label>
+          <label><span>趣味・旅行・会食</span><input type="number" data-field="annualDream" min="0" value="240"><em>万円/年</em></label>
+          <label><span>退職時イベント</span><input type="number" data-field="oneTimeEvent" min="0" value="500"><em>万円</em></label>
+          <label><span>子・孫への支援</span><input type="number" data-field="familySupport" min="0" value="300"><em>万円</em></label>
+          <label><span>介護・住宅改修予備</span><input type="number" data-field="careReserve" min="0" value="800"><em>万円</em></label>
+          <label><span>退職時の借入残</span><input type="number" data-field="debtAtRetire" min="0" value="0"><em>万円</em></label>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="section-title">
+          <span class="section-index">04</span>
+          <div>
+            <h2>老後の収入</h2>
+            <p>公的年金、年金保険、退職後収入を分けます。</p>
+          </div>
+        </div>
+        <div class="field-grid">
+          <label><span>本人の公的年金</span><input type="number" data-field="pensionSelf" min="0" value="160"><em>万円/年</em></label>
+          <label><span>配偶者の公的年金</span><input type="number" data-field="pensionSpouse" min="0" value="90"><em>万円/年</em></label>
+          <label><span>年金保険など</span><input type="number" data-field="annuityAnnual" min="0" value="120"><em>万円/年</em></label>
+          <label><span>年金保険の期間</span><input type="number" data-field="annuityYears" min="0" max="50" value="10"><em>年</em></label>
+          <label><span>退職後の仕事収入</span><input type="number" data-field="workIncome" min="0" value="120"><em>万円/年</em></label>
+          <label><span>仕事収入の終了年齢</span><input type="number" data-field="workUntilAge" min="40" max="110" value="70"><em>歳</em></label>
+          <label><span>不動産・配当等</span><input type="number" data-field="otherIncome" min="0" value="60"><em>万円/年</em></label>
+          <label><span>老後運用利回り</span><input type="number" data-field="retirementReturn" step="0.1" value="1.0"><em>%</em></label>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="section-title">
+          <span class="section-index">05</span>
+          <div>
+            <h2>個人資産と法人準備</h2>
+            <p>個人で作れているほど、会社から必要な退職金は小さくなります。</p>
+          </div>
+        </div>
+        <div class="field-grid">
+          <label><span>現在の個人金融資産</span><input type="number" data-field="personalAssetsNow" min="0" value="1500"><em>万円</em></label>
+          <label><span>個人の積立</span><input type="number" data-field="monthlySaving" min="0" value="20"><em>万円/月</em></label>
+          <label><span>現役中の運用利回り</span><input type="number" data-field="preRetireReturn" step="0.1" value="2.0"><em>%</em></label>
+          <label><span>予定退職金</span><input type="number" data-field="plannedRetirementPay" min="0" value="2500"><em>万円</em></label>
+          <label><span>退職金の手取り率</span><input type="number" data-field="retirementNetRatio" min="30" max="100" value="85"><em>%</em></label>
+          <label><span>退職金原資の既準備額</span><input type="number" data-field="corporateReserveNow" min="0" value="800"><em>万円</em></label>
+          <label><span>法人の年次積立余力</span><input type="number" data-field="corporateAnnualReserve" min="0" value="120"><em>万円/年</em></label>
+          <label><span>保険等の退職時見込額</span><input type="number" data-field="insuranceCashAtRetire" min="0" value="1500"><em>万円</em></label>
+        </div>
+      </section>
+    </section>
+
+    <aside class="result-column" aria-label="試算結果">
+      <section class="summary-panel">
+        <div class="summary-head">
+          <div>
+            <p class="eyebrow">逆算結果</p>
+            <h2 id="statusTitle">入力待ち</h2>
+          </div>
+          <span class="status-pill" id="statusPill">試算中</span>
+        </div>
+        <div class="kpi-grid">
+          <article>
+            <span>必要資金</span>
+            <strong id="requiredCapital">-</strong>
+            <small>引退時点の必要額</small>
+          </article>
+          <article>
+            <span>個人資産見込</span>
+            <strong id="personalAtRetire">-</strong>
+            <small>現役中の積立込み</small>
+          </article>
+          <article>
+            <span>必要退職金</span>
+            <strong id="requiredRetirementPay">-</strong>
+            <small>手取り不足から逆算</small>
+          </article>
+          <article>
+            <span>追加準備</span>
+            <strong id="annualPreparation">-</strong>
+            <small>法人側の年額目安</small>
+          </article>
+        </div>
+      </section>
+
+      <section class="chart-panel">
+        <div class="chart-title">
+          <h2>資金の構成</h2>
+          <p id="coverageText">-</p>
+        </div>
+        <canvas id="fundingChart" width="420" height="260" aria-label="資金構成グラフ"></canvas>
+        <div class="legend" id="fundingLegend"></div>
+      </section>
+
+      <section class="chart-panel">
+        <div class="chart-title">
+          <h2>引退後の残高推移</h2>
+          <p id="runoutText">-</p>
+        </div>
+        <canvas id="balanceChart" width="420" height="240" aria-label="引退後残高推移"></canvas>
+      </section>
+
+      <section class="action-panel">
+        <div class="chart-title">
+          <h2>今から作る体制</h2>
+          <p>個人・法人・保険を同じゴールに接続します。</p>
+        </div>
+        <ul id="actionList"></ul>
+      </section>
+
+      <section class="scenario-panel">
+        <div class="chart-title">
+          <h2>感度</h2>
+          <p>支出水準と利回りが変わった場合の必要退職金です。</p>
+        </div>
+        <div class="scenario-grid" id="scenarioGrid"></div>
+      </section>
+    </aside>
+  </main>
+
+  <template id="legendItemTemplate">
+    <span class="legend-item"><i></i><b></b></span>
+  </template>
+
+  <script src="app.js"></script>
+</body>
+</html>
