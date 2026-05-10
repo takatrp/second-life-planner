@@ -46,12 +46,44 @@
           </div>
         </div>
         <div class="field-grid compact">
-          <label><span>現在年齢</span><input type="number" data-field="currentAge" min="20" max="90" value="50"><em>歳</em></label>
-          <label><span>引退予定年齢</span><input type="number" data-field="retireAge" min="40" max="95" value="65"><em>歳</em></label>
-          <label><span>平均余命の目安</span><input type="number" data-field="lifeAge" min="60" max="110" value="88"><em>歳</em></label>
-          <label><span>公的年金開始</span><input type="number" data-field="pensionStartAge" min="60" max="75" value="65"><em>歳</em></label>
-          <label><span>配偶者</span><select data-field="hasSpouse"><option value="1">あり</option><option value="0">なし</option></select></label>
-          <label><span>配偶者年齢</span><input type="number" data-field="spouseAge" min="20" max="100" value="48"><em>歳</em></label>
+          <label class="input-field">
+            <span>現在年齢</span>
+            <input type="number" data-field="currentAge" min="20" max="90" value="50">
+            <em>歳</em>
+            <small>例示値。50歳前後から15年程度で引退準備を始める相談を想定。</small>
+          </label>
+          <label class="input-field">
+            <span>引退予定年齢</span>
+            <input type="number" data-field="retireAge" min="40" max="95" value="65">
+            <em>歳</em>
+            <small>公的年金の標準的な受給開始年齢に合わせた初期値。</small>
+          </label>
+          <label class="input-field">
+            <span>平均余命の目安</span>
+            <input type="number" data-field="lifeAge" min="60" max="110" value="88">
+            <em>歳</em>
+            <small>令和6年簡易生命表では65歳時の平均余命は男性約19.5年、女性約24.4年。</small>
+          </label>
+          <label class="input-field">
+            <span>公的年金開始</span>
+            <input type="number" data-field="pensionStartAge" min="60" max="75" value="65">
+            <em>歳</em>
+            <small>老齢年金の原則的な受給開始年齢を置いています。</small>
+          </label>
+          <label class="input-field">
+            <span>配偶者</span>
+            <select data-field="hasSpouse">
+              <option value="1">あり</option>
+              <option value="0">なし</option>
+            </select>
+            <small>夫婦2人の老後生活費の確認を初期状態にしています。</small>
+          </label>
+          <label class="input-field">
+            <span>配偶者年齢</span>
+            <input type="number" data-field="spouseAge" min="20" max="100" value="48">
+            <em>歳</em>
+            <small>本人より2歳若い例示値。年金開始や生活期間の会話用。</small>
+          </label>
         </div>
       </section>
 
@@ -64,14 +96,54 @@
           </div>
         </div>
         <div class="field-grid">
-          <label><span>基本生活費</span><input type="number" data-field="monthlyLife" min="0" value="45"><em>万円/月</em></label>
-          <label><span>住居費</span><input type="number" data-field="monthlyHousing" min="0" value="0"><em>万円/月</em></label>
-          <label><span>医療・健康維持</span><input type="number" data-field="annualMedical" min="0" value="35"><em>万円/年</em></label>
-          <label><span>趣味・旅行・会食</span><input type="number" data-field="annualDream" min="0" value="240"><em>万円/年</em></label>
-          <label><span>退職時イベント</span><input type="number" data-field="oneTimeEvent" min="0" value="500"><em>万円</em></label>
-          <label><span>子・孫への支援</span><input type="number" data-field="familySupport" min="0" value="300"><em>万円</em></label>
-          <label><span>介護・住宅改修予備</span><input type="number" data-field="careReserve" min="0" value="800"><em>万円</em></label>
-          <label><span>退職時の借入残</span><input type="number" data-field="debtAtRetire" min="0" value="0"><em>万円</em></label>
+          <label class="input-field">
+            <span>基本生活費</span>
+            <input type="number" data-field="monthlyLife" min="0" value="45">
+            <em>万円/月</em>
+            <small>生命保険文化センターの2025年度調査では、夫婦2人の最低日常生活費23.9万円、ゆとりある生活費39.1万円/月。経営者相談用に余裕を乗せています。</small>
+          </label>
+          <label class="input-field">
+            <span>住居費</span>
+            <input type="number" data-field="monthlyHousing" min="0" value="0">
+            <em>万円/月</em>
+            <small>持ち家前提の初期値。賃貸・住宅ローンが残る場合は別枠で加算。</small>
+          </label>
+          <label class="input-field">
+            <span>医療・健康維持</span>
+            <input type="number" data-field="annualMedical" min="0" value="35">
+            <em>万円/年</em>
+            <small>夫婦の医療費・健診・人間ドック等を年額で置いた面談用目安。</small>
+          </label>
+          <label class="input-field">
+            <span>趣味・旅行・会食</span>
+            <input type="number" data-field="annualDream" min="0" value="240">
+            <em>万円/年</em>
+            <small>ゆとり費の代表用途は旅行・レジャー、日常生活の充実、趣味・教養。月20万円の上乗せ例。</small>
+          </label>
+          <label class="input-field">
+            <span>退職時イベント</span>
+            <input type="number" data-field="oneTimeEvent" min="0" value="500">
+            <em>万円</em>
+            <small>退職直後の旅行、車、住まい整備など一時支出の仮置き。</small>
+          </label>
+          <label class="input-field">
+            <span>子・孫への支援</span>
+            <input type="number" data-field="familySupport" min="0" value="300">
+            <em>万円</em>
+            <small>教育・結婚・住宅・節目祝い等の支援を一括予備費として仮置き。</small>
+          </label>
+          <label class="input-field">
+            <span>介護・住宅改修予備</span>
+            <input type="number" data-field="careReserve" min="0" value="800">
+            <em>万円</em>
+            <small>介護、バリアフリー、在宅環境整備をまとめた保守的な予備費。</small>
+          </label>
+          <label class="input-field">
+            <span>退職時の借入残</span>
+            <input type="number" data-field="debtAtRetire" min="0" value="0">
+            <em>万円</em>
+            <small>生活資金から返済する借入がなければ0。住宅ローン・役員貸付等があれば入力。</small>
+          </label>
         </div>
       </section>
 
@@ -84,14 +156,54 @@
           </div>
         </div>
         <div class="field-grid">
-          <label><span>本人の公的年金</span><input type="number" data-field="pensionSelf" min="0" value="160"><em>万円/年</em></label>
-          <label><span>配偶者の公的年金</span><input type="number" data-field="pensionSpouse" min="0" value="90"><em>万円/年</em></label>
-          <label><span>年金保険など</span><input type="number" data-field="annuityAnnual" min="0" value="120"><em>万円/年</em></label>
-          <label><span>年金保険の期間</span><input type="number" data-field="annuityYears" min="0" max="50" value="10"><em>年</em></label>
-          <label><span>退職後の仕事収入</span><input type="number" data-field="workIncome" min="0" value="120"><em>万円/年</em></label>
-          <label><span>仕事収入の終了年齢</span><input type="number" data-field="workUntilAge" min="40" max="110" value="70"><em>歳</em></label>
-          <label><span>不動産・配当等</span><input type="number" data-field="otherIncome" min="0" value="60"><em>万円/年</em></label>
-          <label><span>老後運用利回り</span><input type="number" data-field="retirementReturn" step="0.1" value="1.0"><em>%</em></label>
+          <label class="input-field">
+            <span>本人の公的年金</span>
+            <input type="number" data-field="pensionSelf" min="0" value="160">
+            <em>万円/年</em>
+            <small>令和8年度の老齢基礎年金満額は月70,608円。厚生年金加入歴がある経営者の例として年160万円を仮置き。</small>
+          </label>
+          <label class="input-field">
+            <span>配偶者の公的年金</span>
+            <input type="number" data-field="pensionSpouse" min="0" value="90">
+            <em>万円/年</em>
+            <small>老齢基礎年金満額に近い年額を出発点に、加入歴差を少し見込んだ例示値。</small>
+          </label>
+          <label class="input-field">
+            <span>年金保険など</span>
+            <input type="number" data-field="annuityAnnual" min="0" value="120">
+            <em>万円/年</em>
+            <small>個人年金・小規模共済の分割受取等として月10万円を仮置き。</small>
+          </label>
+          <label class="input-field">
+            <span>年金保険の期間</span>
+            <input type="number" data-field="annuityYears" min="0" max="50" value="10">
+            <em>年</em>
+            <small>10年確定年金型を想定した初期値。終身型は長めに調整。</small>
+          </label>
+          <label class="input-field">
+            <span>退職後の仕事収入</span>
+            <input type="number" data-field="workIncome" min="0" value="120">
+            <em>万円/年</em>
+            <small>顧問料・軽い役務提供等で月10万円を想定。</small>
+          </label>
+          <label class="input-field">
+            <span>仕事収入の終了年齢</span>
+            <input type="number" data-field="workUntilAge" min="40" max="110" value="70">
+            <em>歳</em>
+            <small>引退後5年程度は関与収入が残る前提の例示値。</small>
+          </label>
+          <label class="input-field">
+            <span>不動産・配当等</span>
+            <input type="number" data-field="otherIncome" min="0" value="60">
+            <em>万円/年</em>
+            <small>不動産、配当、利息等として月5万円を仮置き。</small>
+          </label>
+          <label class="input-field">
+            <span>老後運用利回り</span>
+            <input type="number" data-field="retirementReturn" step="0.1" value="1.0">
+            <em>%</em>
+            <small>取り崩し期は元本保全寄りとして年1%の控えめな仮置き。</small>
+          </label>
         </div>
       </section>
 
@@ -103,16 +215,89 @@
             <p>個人で作れているほど、会社から必要な退職金は小さくなります。</p>
           </div>
         </div>
-        <div class="field-grid">
-          <label><span>現在の個人金融資産</span><input type="number" data-field="personalAssetsNow" min="0" value="1500"><em>万円</em></label>
-          <label><span>個人の積立</span><input type="number" data-field="monthlySaving" min="0" value="20"><em>万円/月</em></label>
-          <label><span>現役中の運用利回り</span><input type="number" data-field="preRetireReturn" step="0.1" value="2.0"><em>%</em></label>
-          <label><span>予定退職金</span><input type="number" data-field="plannedRetirementPay" min="0" value="2500"><em>万円</em></label>
-          <label><span>退職金の手取り率</span><input type="number" data-field="retirementNetRatio" min="30" max="100" value="85"><em>%</em></label>
-          <label><span>退職金原資の既準備額</span><input type="number" data-field="corporateReserveNow" min="0" value="800"><em>万円</em></label>
-          <label><span>法人の年次積立余力</span><input type="number" data-field="corporateAnnualReserve" min="0" value="120"><em>万円/年</em></label>
-          <label><span>保険等の退職時見込額</span><input type="number" data-field="insuranceCashAtRetire" min="0" value="1500"><em>万円</em></label>
+        <div class="asset-groups">
+          <section class="asset-group asset-group--personal" aria-label="個人側">
+            <div class="asset-group__head">
+              <span class="owner-badge owner-badge--personal">個人</span>
+              <h3>個人で作る資産</h3>
+            </div>
+            <div class="field-grid">
+              <label class="input-field">
+                <span>現在の個人金融資産</span>
+                <input type="number" data-field="personalAssetsNow" min="0" value="1500">
+                <em>万円</em>
+                <small>預貯金・証券・NISA等の合計。例示値として1,500万円から開始。</small>
+              </label>
+              <label class="input-field">
+                <span>個人の積立</span>
+                <input type="number" data-field="monthlySaving" min="0" value="20">
+                <em>万円/月</em>
+                <small>NISA、小規模企業共済、預貯金等で月20万円を積み立てる例。</small>
+              </label>
+              <label class="input-field">
+                <span>現役中の運用利回り</span>
+                <input type="number" data-field="preRetireReturn" step="0.1" value="2.0">
+                <em>%</em>
+                <small>長期・分散運用の控えめな名目利回りとして年2%を仮置き。</small>
+              </label>
+            </div>
+          </section>
+
+          <section class="asset-group asset-group--corporate" aria-label="法人側">
+            <div class="asset-group__head">
+              <span class="owner-badge owner-badge--corporate">法人</span>
+              <h3>法人で作る退職金原資</h3>
+            </div>
+            <div class="field-grid">
+              <label class="input-field">
+                <span>予定退職金</span>
+                <input type="number" data-field="plannedRetirementPay" min="0" value="2500">
+                <em>万円</em>
+                <small>役員退職給与規程・最終報酬月額・役員在任年数・功績倍率から別途検証する仮置き。</small>
+              </label>
+              <label class="input-field">
+                <span>退職金の手取り率</span>
+                <input type="number" data-field="retirementNetRatio" min="30" max="100" value="85">
+                <em>%</em>
+                <small>退職所得控除や2分の1課税の影響を簡易反映するための概算率。短期役員退職等は別途注意。</small>
+              </label>
+              <label class="input-field">
+                <span>退職金原資の既準備額</span>
+                <input type="number" data-field="corporateReserveNow" min="0" value="800">
+                <em>万円</em>
+                <small>法人内の退職金目的資金・内部留保のうち、実際に使える額だけを入力。</small>
+              </label>
+              <label class="input-field">
+                <span>法人の年次積立余力</span>
+                <input type="number" data-field="corporateAnnualReserve" min="0" value="120">
+                <em>万円/年</em>
+                <small>継続MAS側で資金繰り確認する年100万円台の準備例。月10万円相当。</small>
+              </label>
+              <label class="input-field">
+                <span>保険等の退職時見込額</span>
+                <input type="number" data-field="insuranceCashAtRetire" min="0" value="1500">
+                <em>万円</em>
+                <small>法人保険・積立商品等の解約返戻金や満期金の退職時見込額を仮置き。</small>
+              </label>
+            </div>
+          </section>
         </div>
+      </section>
+
+      <section class="panel source-panel">
+        <div class="section-title">
+          <span class="section-index">根拠</span>
+          <div>
+            <h2>プリセットの参考数値</h2>
+            <p>初期値は提案用の仮置きです。実際の提案では、ねんきん定期便、法人決算、保険設計書で上書きします。</p>
+          </div>
+        </div>
+        <ul class="source-list">
+          <li>老後生活費: 生命保険文化センター「生活保障に関する調査」2025年度。最低日常生活費23.9万円/月、ゆとりある生活費39.1万円/月。</li>
+          <li>公的年金: 日本年金機構 令和8年度年金額。老齢基礎年金満額70,608円/月、厚生年金の標準的な夫婦2人分237,279円/月。</li>
+          <li>平均余命: 厚生労働省 令和6年簡易生命表。65歳時の平均余命を老後期間の目安に利用。</li>
+          <li>退職金税務: 国税庁タックスアンサー。退職所得控除、2分の1課税、短期・特定役員退職手当等の取扱いは個別確認。</li>
+        </ul>
       </section>
     </section>
 

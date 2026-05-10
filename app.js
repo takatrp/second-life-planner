@@ -41,7 +41,6 @@ const colors = {
 };
 
 const STORAGE_KEY = "second-life-planner-state-v1";
-
 const els = {};
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -172,8 +171,9 @@ function calculate(state) {
 
   const corporatePreparedGross = futureValue(state.corporateReserveNow, state.corporateAnnualReserve, state.preRate, state.yearsToRetire) + state.insuranceCashAtRetire;
   const sourceGapForRequired = Math.max(0, requiredGrossRetirementPay - corporatePreparedGross);
-  const sourceGapForPlan = Math.max(0, state.plannedRetirementPay - corporatePreparedGross);
-  const annualAdditionalPreparation = state.yearsToRetire > 0 ? annualPaymentForFutureValue(sourceGapForRequired, state.preRate, state.yearsToRetire) : sourceGapForRequired;
+  const annualAdditionalPreparation = state.yearsToRetire > 0
+    ? annualPaymentForFutureValue(sourceGapForRequired, state.preRate, state.yearsToRetire)
+    : sourceGapForRequired;
 
   const planBalances = simulateBalances(state, cashflows, personalAtRetire + plannedNetRetirementPay, oneTimeAtRetire);
   const fullBalances = simulateBalances(state, cashflows, personalAtRetire + requiredNetFromCompany, oneTimeAtRetire);
@@ -196,7 +196,6 @@ function calculate(state) {
     retirementDesignGap,
     corporatePreparedGross,
     sourceGapForRequired,
-    sourceGapForPlan,
     annualAdditionalPreparation,
     planBalances,
     fullBalances,
