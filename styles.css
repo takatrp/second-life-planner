@@ -437,9 +437,19 @@ textarea:focus {
   box-shadow: 0 22px 54px rgba(116, 78, 16, 0.16);
 }
 
+.action-panel--priority .chart-title {
+  display: block;
+}
+
+.action-panel--priority .chart-title p {
+  margin-top: 6px;
+  text-align: left;
+}
+
 .action-panel--priority h2 {
   margin-top: 4px;
-  font-size: 24px;
+  font-size: 22px;
+  white-space: nowrap;
 }
 
 .priority-label {
@@ -452,17 +462,6 @@ textarea:focus {
   background: var(--red);
   font-size: 12px;
   font-weight: 900;
-}
-
-.action-lead {
-  margin: 0 0 12px;
-  border-radius: 7px;
-  padding: 10px 12px;
-  color: #5f3c0b;
-  background: #fff2d4;
-  font-size: 13px;
-  font-weight: 800;
-  line-height: 1.55;
 }
 
 .chart-title {
