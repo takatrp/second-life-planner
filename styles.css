@@ -291,8 +291,16 @@ textarea:focus {
 .asset-group__head {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 8px;
   margin-bottom: 12px;
+}
+
+.asset-group__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
 }
 
 .asset-group__head h3 {
@@ -317,6 +325,25 @@ textarea:focus {
 
 .owner-badge--corporate {
   background: var(--amber);
+}
+
+.detail-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  border-radius: 7px;
+  padding: 7px 12px;
+  color: #fff;
+  background: var(--amber);
+  font-size: 13px;
+  font-weight: 800;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.detail-button:hover {
+  background: #9c5b0e;
 }
 
 .source-panel {
@@ -403,6 +430,41 @@ textarea:focus {
   padding: 16px;
 }
 
+.action-panel--priority {
+  border: 2px solid #c78425;
+  padding: 18px;
+  background: linear-gradient(180deg, #fff9ea 0%, #ffffff 100%);
+  box-shadow: 0 22px 54px rgba(116, 78, 16, 0.16);
+}
+
+.action-panel--priority h2 {
+  margin-top: 4px;
+  font-size: 24px;
+}
+
+.priority-label {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  border-radius: 999px;
+  padding: 4px 10px;
+  color: #fff;
+  background: var(--red);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.action-lead {
+  margin: 0 0 12px;
+  border-radius: 7px;
+  padding: 10px 12px;
+  color: #5f3c0b;
+  background: #fff2d4;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.55;
+}
+
 .chart-title {
   display: flex;
   justify-content: space-between;
@@ -451,15 +513,17 @@ canvas {
   padding: 0;
   list-style: none;
   display: grid;
-  gap: 8px;
+  gap: 10px;
 }
 
 #actionList li {
-  border-left: 4px solid var(--green);
-  border-radius: 6px;
-  padding: 9px 10px;
-  background: var(--surface-2);
+  border: 1px solid #cfded8;
+  border-left: 6px solid var(--green);
+  border-radius: 8px;
+  padding: 11px 12px;
+  background: #f4faf7;
   font-size: 13px;
+  font-weight: 700;
   line-height: 1.55;
 }
 

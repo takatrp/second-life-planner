@@ -306,48 +306,48 @@ function renderActions(result) {
   if (result.retirementDesignGap > 0) {
     items.push({
       className: "bad",
-      text: `予定退職金は必要額より ${yen(result.retirementDesignGap)} 不足。役員退職給与規程、功績倍率、支給時期を先に確認。`
+      text: `打ち手1: 予定退職金は必要額より ${yen(result.retirementDesignGap)} 不足。詳細試算で役員退職給与規程、功績倍率、支給時期を確認。`
     });
   } else {
     items.push({
       className: "",
-      text: "予定退職金は手取り不足の逆算額を概ねカバー。過大支給にならない根拠資料を整える段階。"
+      text: "打ち手1: 予定退職金は手取り不足の逆算額を概ねカバー。過大支給にならない根拠資料を整える段階。"
     });
   }
 
   if (result.sourceGapForRequired > 0) {
     items.push({
       className: result.sourceGapForRequired > 1000 ? "bad" : "warn",
-      text: `必要退職金の原資は ${yen(result.sourceGapForRequired)} 不足。内部留保、保険、投資余力で年 ${yen(result.annualAdditionalPreparation)} の追加準備が目安。`
+      text: `打ち手2: 必要退職金の原資は ${yen(result.sourceGapForRequired)} 不足。内部留保、保険、投資余力で年 ${yen(result.annualAdditionalPreparation)} の追加準備が目安。`
     });
   } else {
     items.push({
       className: "",
-      text: "法人側の退職金原資は必要水準に到達見込み。継続MAS側では資金繰りと税負担の接続を確認。"
+      text: "打ち手2: 法人側の退職金原資は必要水準に到達見込み。継続MAS側では資金繰りと税負担の接続を確認。"
     });
   }
 
   if (result.personalAtRetire >= result.requiredCapital * 0.55) {
     items.push({
       className: "",
-      text: "個人資産の寄与が大きいため、退職金は生活保障より税務・事業承継・資金繰りとのバランスで設計。"
+      text: "打ち手3: 個人資産の寄与が大きいため、退職金は生活保障より税務・事業承継・資金繰りとのバランスで設計。"
     });
   } else {
     items.push({
       className: "warn",
-      text: "個人資産だけでは老後資金の半分に届きにくい。NISA・小規模企業共済・個人年金などの個人側積立も同時に検討。"
+      text: "打ち手3: 個人資産だけでは老後資金の半分に届きにくい。NISA・小規模企業共済・個人年金などの個人側積立も同時に検討。"
     });
   }
 
   if (years <= 5) {
     items.push({
       className: "bad",
-      text: "引退まで5年以内。新規積立より、支給可能額、既存資産、退職後収入の確定度を優先して確認。"
+      text: "打ち手4: 引退まで5年以内。新規積立より、支給可能額、既存資産、退職後収入の確定度を優先して確認。"
     });
   } else {
     items.push({
       className: "",
-      text: `引退まで${years}年。今の時点で退職金原資を年次予算に入れると、相談が単発試算で終わりにくい。`
+      text: `打ち手4: 引退まで${years}年。今の時点で退職金原資を年次予算に入れると、相談が単発試算で終わりにくい。`
     });
   }
 

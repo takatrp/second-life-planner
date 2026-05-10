@@ -245,21 +245,24 @@
 
           <section class="asset-group asset-group--corporate" aria-label="法人側">
             <div class="asset-group__head">
-              <span class="owner-badge owner-badge--corporate">法人</span>
-              <h3>法人で作る退職金原資</h3>
+              <div class="asset-group__title">
+                <span class="owner-badge owner-badge--corporate">法人</span>
+                <h3>法人で作る退職金原資</h3>
+              </div>
+              <a class="detail-button" href="https://takatrp.github.io/taishoku/" target="_blank" rel="noopener">詳しく試算</a>
             </div>
             <div class="field-grid">
               <label class="input-field">
                 <span>予定退職金</span>
                 <input type="number" data-field="plannedRetirementPay" min="0" value="2500">
                 <em>万円</em>
-                <small>役員退職給与規程・最終報酬月額・役員在任年数・功績倍率から別途検証する仮置き。</small>
+                <small>ここでは仮置き。役員退職給与規程・最終報酬月額・在任年数・功績倍率は「詳しく試算」で確認。</small>
               </label>
               <label class="input-field">
                 <span>退職金の手取り率</span>
                 <input type="number" data-field="retirementNetRatio" min="30" max="100" value="85">
                 <em>%</em>
-                <small>退職所得控除や2分の1課税の影響を簡易反映するための概算率。短期役員退職等は別途注意。</small>
+                <small>退職所得控除や2分の1課税を簡易反映する概算率。正確な手取りは「詳しく試算」で確認。</small>
               </label>
               <label class="input-field">
                 <span>退職金原資の既準備額</span>
@@ -334,6 +337,18 @@
         </div>
       </section>
 
+      <section class="action-panel action-panel--priority">
+        <div class="chart-title">
+          <div>
+            <span class="priority-label">最重要</span>
+            <h2>今から作る体制</h2>
+          </div>
+          <p>このツールの結論。個人・法人・保険を同じゴールに接続します。</p>
+        </div>
+        <p class="action-lead">不足額を見るだけで終わらせず、年次予算・退職金規程・保険設計・個人積立へ落とします。</p>
+        <ul id="actionList"></ul>
+      </section>
+
       <section class="chart-panel">
         <div class="chart-title">
           <h2>資金の構成</h2>
@@ -349,14 +364,6 @@
           <p id="runoutText">-</p>
         </div>
         <canvas id="balanceChart" width="420" height="240" aria-label="引退後残高推移"></canvas>
-      </section>
-
-      <section class="action-panel">
-        <div class="chart-title">
-          <h2>今から作る体制</h2>
-          <p>個人・法人・保険を同じゴールに接続します。</p>
-        </div>
-        <ul id="actionList"></ul>
       </section>
 
       <section class="scenario-panel">
