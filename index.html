@@ -133,10 +133,22 @@
             <small>教育・結婚・住宅・節目祝い等の支援を一括予備費として仮置き。</small>
           </label>
           <label class="input-field">
-            <span>介護・住宅改修予備</span>
-            <input type="number" data-field="careReserve" min="0" value="800">
+            <span>介護月額</span>
+            <input type="number" data-field="careMonthly" min="0" step="0.1" value="8.3">
+            <em>万円/月</em>
+            <small>生命保険文化センター調査の平均月額8.3万円を初期値。施設介護想定なら20〜30万円台も検討。</small>
+          </label>
+          <label class="input-field">
+            <span>介護期間</span>
+            <input type="number" data-field="careYears" min="0" step="0.5" value="5">
+            <em>年</em>
+            <small>平均約5年を出発点に、在宅・施設・家族支援の方針で調整。</small>
+          </label>
+          <label class="input-field">
+            <span>介護一時費用</span>
+            <input type="number" data-field="careOneTime" min="0" value="74">
             <em>万円</em>
-            <small>介護、バリアフリー、在宅環境整備をまとめた保守的な予備費。</small>
+            <small>住宅改修、福祉用具、入居準備などの一時費用。公表平均約74万円を初期値。</small>
           </label>
           <label class="input-field">
             <span>退職時の借入残</span>
@@ -160,13 +172,29 @@
             <span>本人の公的年金</span>
             <input type="number" data-field="pensionSelf" min="0" value="160">
             <em>万円/年</em>
-            <small>令和8年度の老齢基礎年金満額は月70,608円。厚生年金加入歴がある経営者の例として年160万円を仮置き。</small>
+            <small>仮置き値。役員報酬を抑えた経営者は下振れしやすいため、ねんきん定期便で必ず上書き。</small>
+          </label>
+          <label class="input-field">
+            <span>本人年金の確認</span>
+            <select data-field="pensionSelfChecked">
+              <option value="0">未確認</option>
+              <option value="1">定期便で確認済み</option>
+            </select>
+            <small>未確認のままでは結果欄に警告を出します。</small>
           </label>
           <label class="input-field">
             <span>配偶者の公的年金</span>
             <input type="number" data-field="pensionSpouse" min="0" value="90">
             <em>万円/年</em>
-            <small>老齢基礎年金満額に近い年額を出発点に、加入歴差を少し見込んだ例示値。</small>
+            <small>専業主婦、役員、勤務歴で大きく変わります。加給年金・振替加算も個別確認。</small>
+          </label>
+          <label class="input-field">
+            <span>配偶者年金の確認</span>
+            <select data-field="pensionSpouseChecked">
+              <option value="0">未確認</option>
+              <option value="1">加入歴確認済み</option>
+            </select>
+            <small>配偶者ありの場合は加入歴確認フラグとして使います。</small>
           </label>
           <label class="input-field">
             <span>年金保険など</span>
@@ -187,6 +215,14 @@
             <small>顧問料・軽い役務提供等で月10万円を想定。</small>
           </label>
           <label class="input-field">
+            <span>仕事収入の区分</span>
+            <select data-field="workIncomeType">
+              <option value="0">顧問料・事業収入等</option>
+              <option value="1">役員報酬・給与</option>
+            </select>
+            <small>給与・役員報酬で年金開始後も続く場合は在職老齢年金の警告を出します。</small>
+          </label>
+          <label class="input-field">
             <span>仕事収入の終了年齢</span>
             <input type="number" data-field="workUntilAge" min="40" max="110" value="70">
             <em>歳</em>
@@ -203,6 +239,12 @@
             <input type="number" data-field="retirementReturn" step="0.1" value="1.0">
             <em>%</em>
             <small>取り崩し期は元本保全寄りとして年1%の控えめな仮置き。</small>
+          </label>
+          <label class="input-field">
+            <span>老後支出インフレ率</span>
+            <input type="number" data-field="inflationRate" step="0.1" value="2.0">
+            <em>%</em>
+            <small>物価上昇を独立変数として反映。日銀目標2%を標準シナリオの目安にしています。</small>
           </label>
         </div>
       </section>
@@ -265,6 +307,24 @@
                 <small>退職所得控除や2分の1課税を簡易反映する概算率。正確な手取りは「詳しく試算」で確認。</small>
               </label>
               <label class="input-field">
+                <span>最終報酬月額</span>
+                <input type="number" data-field="finalMonthlyComp" min="0" value="120">
+                <em>万円/月</em>
+                <small>功績倍率法の損金算入目安に使う月額。役員退職給与規程・議事録と照合。</small>
+              </label>
+              <label class="input-field">
+                <span>役員在任年数</span>
+                <input type="number" data-field="officerYears" min="0" step="1" value="25">
+                <em>年</em>
+                <small>法人登記・議事録で確認。代表取締役以外の期間は扱いを個別確認。</small>
+              </label>
+              <label class="input-field">
+                <span>功績倍率</span>
+                <input type="number" data-field="meritMultiplier" min="0" step="0.1" value="3.0">
+                <em>倍</em>
+                <small>役職・功績・同業水準を踏まえた仮置き。過大退職金リスクの一次チェック用。</small>
+              </label>
+              <label class="input-field">
                 <span>退職金原資の既準備額</span>
                 <input type="number" data-field="corporateReserveNow" min="0" value="800">
                 <em>万円</em>
@@ -281,6 +341,21 @@
                 <input type="number" data-field="insuranceCashAtRetire" min="0" value="1500">
                 <em>万円</em>
                 <small>法人保険・積立商品等の解約返戻金や満期金の退職時見込額を仮置き。</small>
+              </label>
+              <label class="input-field">
+                <span>法人借入の保証残</span>
+                <input type="number" data-field="guaranteeDebt" min="0" value="0">
+                <em>万円</em>
+                <small>経営者保証・連帯保証の残額。生活資金から返す個人借入とは別枠で確認。</small>
+              </label>
+              <label class="input-field">
+                <span>保証解除の見込み</span>
+                <select data-field="guaranteeReleaseStatus">
+                  <option value="0">未確認</option>
+                  <option value="1">交渉中・条件あり</option>
+                  <option value="2">解除見込みあり</option>
+                </select>
+                <small>事業承継時に保証から外れられるかを面談論点にします。</small>
               </label>
             </div>
           </section>
@@ -299,6 +374,7 @@
           <li>老後生活費: 生命保険文化センター「生活保障に関する調査」2025年度。最低日常生活費23.9万円/月、ゆとりある生活費39.1万円/月。</li>
           <li>公的年金: 日本年金機構 令和8年度年金額。老齢基礎年金満額70,608円/月、厚生年金の標準的な夫婦2人分237,279円/月。</li>
           <li>平均余命: 厚生労働省 令和6年簡易生命表。65歳時の平均余命を老後期間の目安に利用。</li>
+          <li>介護費用: 生命保険文化センター調査の平均月額8.3万円、平均期間約5年、一時費用約74万円を初期値に分解。</li>
           <li>退職金税務: 国税庁タックスアンサー。退職所得控除、2分の1課税、短期・特定役員退職手当等の取扱いは個別確認。</li>
         </ul>
       </section>
@@ -348,6 +424,25 @@
         <ul id="actionList"></ul>
       </section>
 
+      <section class="basis-panel">
+        <div class="chart-title">
+          <div>
+            <h2>計算根拠チェック</h2>
+            <p>結果の数字と、面談前に潰すべき前提を同じ場所で確認します。</p>
+          </div>
+        </div>
+        <div class="basis-grid">
+          <section>
+            <h3>計算の内訳</h3>
+            <ul id="formulaList" class="check-list"></ul>
+          </section>
+          <section>
+            <h3>要確認アラート</h3>
+            <ul id="validationList" class="check-list"></ul>
+          </section>
+        </div>
+      </section>
+
       <section class="chart-panel">
         <div class="chart-title">
           <h2>資金の構成</h2>
@@ -374,6 +469,14 @@
       </section>
     </aside>
   </main>
+
+  <footer class="mk-mini">
+    © <span id="cpy-year">2026</span>
+    <a href="https://www.matsumoto-kaikei.or.jp/" target="_blank" rel="noopener license">税理士法人松本会計事務所</a> ｜
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="license noopener">CC BY-NC-SA 4.0</a> ｜
+    <a href="/tool-portal/terms.html" target="_blank" rel="noopener">利用条件</a> ｜
+    <span id="build-rev">Rev.2</span>（<span id="last-updated-date"></span>）
+  </footer>
 
   <template id="legendItemTemplate">
     <span class="legend-item"><i></i><b></b></span>

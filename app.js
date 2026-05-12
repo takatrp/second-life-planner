@@ -12,24 +12,35 @@ const fields = {
   annualDream: 240,
   oneTimeEvent: 500,
   familySupport: 300,
-  careReserve: 800,
+  careMonthly: 8.3,
+  careYears: 5,
+  careOneTime: 74,
   debtAtRetire: 0,
   pensionSelf: 160,
+  pensionSelfChecked: 0,
   pensionSpouse: 90,
+  pensionSpouseChecked: 0,
   annuityAnnual: 120,
   annuityYears: 10,
   workIncome: 120,
+  workIncomeType: 0,
   workUntilAge: 70,
   otherIncome: 60,
   retirementReturn: 1,
+  inflationRate: 2,
   personalAssetsNow: 1500,
   monthlySaving: 20,
   preRetireReturn: 2,
   plannedRetirementPay: 2500,
   retirementNetRatio: 85,
+  finalMonthlyComp: 120,
+  officerYears: 25,
+  meritMultiplier: 3,
   corporateReserveNow: 800,
   corporateAnnualReserve: 120,
-  insuranceCashAtRetire: 1500
+  insuranceCashAtRetire: 1500,
+  guaranteeDebt: 0,
+  guaranteeReleaseStatus: 0
 };
 
 const colors = {
@@ -41,9 +52,12 @@ const colors = {
 };
 
 const STORAGE_KEY = "second-life-planner-state-v1";
+const VERSION = "Rev.2";
 const els = {};
 
 document.addEventListener("DOMContentLoaded", () => {
+  syncFooterMeta();
+
   document.querySelectorAll("[data-field]").forEach((input) => {
     els[input.dataset.field] = input;
     input.addEventListener("input", update);
@@ -111,6 +125,21 @@ function flashButton(id, text) {
   }, 1200);
 }
 
+function syncFooterMeta() {
+  const yearEl = document.getElementById("cpy-year");
+  const dateEl = document.getElementById("last-updated-date");
+  const revEl = document.getElementById("build-rev");
+  if (yearEl) yearEl.textContent = String(new Date().getFullYear());
+  if (dateEl) {
+    const modified = new Date(document.lastModified);
+    const yyyy = String(modified.getFullYear());
+    const mm = String(modified.getMonth() + 1).padStart(2, "0");
+    const dd = String(modified.getDate()).padStart(2, "0");
+    dateEl.textContent = `${yyyy}-${mm}-${dd}`;
+  }
+  if (revEl) revEl.textContent = VERSION;
+}
+
 function update() {
   const state = normalize(readState());
   const result = calculate(state);
@@ -118,6 +147,7 @@ function update() {
   renderFundingChart(result);
   renderBalanceChart(result);
   renderActions(result);
+  renderBasis(result);
   renderScenarios(state);
 }
 
@@ -131,15 +161,18 @@ function normalize(state) {
     retirementYears,
     netRatio: clamp(state.retirementNetRatio / 100, 0.3, 1),
     preRate: state.preRetireReturn / 100,
-    retireRate: state.retirementReturn / 100
+    retireRate: state.retirementReturn / 100,
+    inflationRateDecimal: state.inflationRate / 100
   };
 }
 
 function calculate(state) {
   const annualBasicSpend = (state.monthlyLife + state.monthlyHousing) * 12 + state.annualMedical + state.annualDream;
   const oneTimeAtRetire = state.oneTimeEvent + state.familySupport + state.debtAtRetire;
+  const careReserve = state.careMonthly * 12 * state.careYears + state.careOneTime;
   const careAge = Math.min(Math.max(state.retireAge + 10, 78), state.lifeAge);
   const personalAtRetire = futureValue(state.personalAssetsNow, state.monthlySaving * 12, state.preRate, state.yearsToRetire);
+  const retirementTaxLimit = state.finalMonthlyComp * state.officerYears * state.meritMultiplier;
 
   const cashflows = [];
   let requiredCapital = oneTimeAtRetire;
@@ -149,25 +182,28 @@ function calculate(state) {
   for (let i = 0; i < state.retirementYears; i += 1) {
     const age = state.retireAge + i;
     const discount = Math.pow(1 + state.retireRate, i);
+    const inflation = Math.pow(1 + state.inflationRateDecimal, i);
     const pension = age >= state.pensionStartAge ? state.pensionSelf + (state.hasSpouse ? state.pensionSpouse : 0) : 0;
     const annuity = i < state.annuityYears ? state.annuityAnnual : 0;
     const work = age < state.workUntilAge ? state.workIncome : 0;
     const other = state.otherIncome;
     const income = pension + annuity + work + other;
-    const care = age === careAge ? state.careReserve : 0;
-    const spending = annualBasicSpend + care;
+    const care = age === careAge ? careReserve * inflation : 0;
+    const spending = annualBasicSpend * inflation + care;
     const deficit = Math.max(0, spending - income);
 
     incomePv += income / discount;
     spendingPv += spending / discount;
     requiredCapital += deficit / discount;
-    cashflows.push({ age, income, spending, deficit, pension, annuity, work, other, care });
+    cashflows.push({ age, income, spending, deficit, pension, annuity, work, other, care, inflation });
   }
 
   const requiredNetFromCompany = Math.max(0, requiredCapital - personalAtRetire);
   const requiredGrossRetirementPay = requiredNetFromCompany / state.netRatio;
   const plannedNetRetirementPay = state.plannedRetirementPay * state.netRatio;
   const retirementDesignGap = Math.max(0, requiredGrossRetirementPay - state.plannedRetirementPay);
+  const requiredOverTaxLimit = Math.max(0, requiredGrossRetirementPay - retirementTaxLimit);
+  const plannedOverTaxLimit = Math.max(0, state.plannedRetirementPay - retirementTaxLimit);
 
   const corporatePreparedGross = futureValue(state.corporateReserveNow, state.corporateAnnualReserve, state.preRate, state.yearsToRetire) + state.insuranceCashAtRetire;
   const sourceGapForRequired = Math.max(0, requiredGrossRetirementPay - corporatePreparedGross);
@@ -184,6 +220,7 @@ function calculate(state) {
     state,
     annualBasicSpend,
     oneTimeAtRetire,
+    careReserve,
     careAge,
     personalAtRetire,
     cashflows,
@@ -194,6 +231,9 @@ function calculate(state) {
     requiredGrossRetirementPay,
     plannedNetRetirementPay,
     retirementDesignGap,
+    retirementTaxLimit,
+    requiredOverTaxLimit,
+    plannedOverTaxLimit,
     corporatePreparedGross,
     sourceGapForRequired,
     annualAdditionalPreparation,
@@ -303,6 +343,23 @@ function renderActions(result) {
   const items = [];
   const years = result.state.yearsToRetire;
 
+  if (result.requiredOverTaxLimit > 0) {
+    items.push({
+      className: "bad",
+      text: `税務限度チェック: 逆算した必要退職金が功績倍率法の目安を ${yen(result.requiredOverTaxLimit)} 超過。最終報酬月額・在任年数・功績倍率を確認し、過大退職金リスクを先に説明。`
+    });
+  } else if (result.plannedOverTaxLimit > 0) {
+    items.push({
+      className: "bad",
+      text: `税務限度チェック: 予定退職金が功績倍率法の目安を ${yen(result.plannedOverTaxLimit)} 超過。支給額の根拠資料と損金算入可能性を詳細試算で確認。`
+    });
+  } else {
+    items.push({
+      className: "",
+      text: "税務限度チェック: 逆算額・予定額はいずれも功績倍率法の目安内。最終報酬月額、在任年数、功績倍率の根拠資料を残す。"
+    });
+  }
+
   if (result.retirementDesignGap > 0) {
     items.push({
       className: "bad",
@@ -351,6 +408,27 @@ function renderActions(result) {
     });
   }
 
+  if (!result.state.pensionSelfChecked || (result.state.hasSpouse && !result.state.pensionSpouseChecked)) {
+    items.push({
+      className: "warn",
+      text: "年金確認: 初期値のまま提案しない。本人・配偶者のねんきん定期便、加入歴、加給年金・振替加算の有無を面談前に上書き確認。"
+    });
+  }
+
+  if (result.state.workIncome > 0 && result.state.workIncomeType === 1 && result.state.workUntilAge > result.state.pensionStartAge) {
+    items.push({
+      className: "warn",
+      text: "在職老齢年金: 退職後収入を役員報酬・給与として受ける期間が年金開始後に重なる。年金調整の有無を別途確認。"
+    });
+  }
+
+  if (result.state.guaranteeDebt > 0 && result.state.guaranteeReleaseStatus !== 2) {
+    items.push({
+      className: "warn",
+      text: `経営者保証: 法人借入の保証残 ${yen(result.state.guaranteeDebt)} について、承継時の解除条件を確認。生活資金とは別に、会社依存が残る論点として扱う。`
+    });
+  }
+
   items.forEach((item) => {
     const li = document.createElement("li");
     li.className = item.className;
@@ -359,11 +437,74 @@ function renderActions(result) {
   });
 }
 
+function renderBasis(result) {
+  const formulaList = document.getElementById("formulaList");
+  const validationList = document.getElementById("validationList");
+  if (!formulaList || !validationList) return;
+
+  formulaList.innerHTML = "";
+  validationList.innerHTML = "";
+
+  const formulaItems = [
+    `年間支出: (${yen(result.state.monthlyLife)} + ${yen(result.state.monthlyHousing)}) x 12 + 医療 ${yen(result.state.annualMedical)} + 趣味等 ${yen(result.state.annualDream)} = ${yen(result.annualBasicSpend)}/年。老後期間中はインフレ率 ${pct(result.state.inflationRate)} で増加。`,
+    `介護予備: 月額 ${man(result.state.careMonthly)} x 12か月 x ${result.state.careYears}年 + 一時費用 ${yen(result.state.careOneTime)} = ${yen(result.careReserve)}。${result.careAge}歳時点に一括計上。`,
+    `必要資金: 各年の不足額を老後運用利回り ${pct(result.state.retirementReturn)} で退職時点へ割引し、退職時イベント・家族支援・個人借入返済を加算 = ${yen(result.requiredCapital)}。`,
+    `個人資産見込: 現在資産 ${yen(result.state.personalAssetsNow)} と年 ${yen(result.state.monthlySaving * 12)} の積立を、現役中利回り ${pct(result.state.preRetireReturn)} で${result.state.yearsToRetire}年積立 = ${yen(result.personalAtRetire)}。`,
+    `必要退職金: (必要資金 ${yen(result.requiredCapital)} - 個人資産見込 ${yen(result.personalAtRetire)}) ÷ 手取り率 ${pct(result.state.retirementNetRatio)} = ${yen(result.requiredGrossRetirementPay)}。`,
+    `功績倍率法の目安: 最終報酬月額 ${yen(result.state.finalMonthlyComp)} x 在任年数 ${result.state.officerYears}年 x 功績倍率 ${result.state.meritMultiplier} = ${yen(result.retirementTaxLimit)}。`,
+    `法人原資: 既準備額 ${yen(result.state.corporateReserveNow)} と年 ${yen(result.state.corporateAnnualReserve)} の積立見込 + 保険等 ${yen(result.state.insuranceCashAtRetire)} = ${yen(result.corporatePreparedGross)}。不足分を年額換算すると ${yen(result.annualAdditionalPreparation)}/年。`
+  ];
+
+  formulaItems.forEach((text) => appendCheckItem(formulaList, "", text));
+
+  const checks = buildValidationChecks(result);
+  checks.forEach((item) => appendCheckItem(validationList, item.className, item.text));
+}
+
+function buildValidationChecks(result) {
+  const checks = [];
+
+  checks.push(result.requiredOverTaxLimit > 0
+    ? { className: "bad", text: `必要退職金が功績倍率法の目安を ${yen(result.requiredOverTaxLimit)} 超過。逆算額をそのまま期待値にしない。` }
+    : { className: "", text: "必要退職金は功績倍率法の目安内。報酬月額・在任年数・功績倍率の根拠を保存。" });
+
+  checks.push(result.state.pensionSelfChecked
+    ? { className: "", text: "本人年金額は確認済み扱い。ねんきん定期便等の金額で入力されている前提。" }
+    : { className: "warn", text: "本人年金額が未確認。初期値160万円のまま提案書に進めない。" });
+
+  if (result.state.hasSpouse) {
+    checks.push(result.state.pensionSpouseChecked
+      ? { className: "", text: "配偶者年金は加入歴確認済み扱い。専業主婦、役員、勤務歴、加給年金・振替加算を確認。" }
+      : { className: "warn", text: "配偶者年金が未確認。加入歴、加給年金・振替加算、役員報酬歴を確認。" });
+  }
+
+  checks.push(result.state.workIncome > 0 && result.state.workIncomeType === 1 && result.state.workUntilAge > result.state.pensionStartAge
+    ? { className: "warn", text: "年金開始後も給与・役員報酬が残るため、在職老齢年金の調整対象になる可能性。" }
+    : { className: "", text: "退職後収入と在職老齢年金の重なりは大きな警告なし。収入区分は面談で確認。" });
+
+  checks.push(result.state.inflationRate >= 2
+    ? { className: "warn", text: `インフレ率 ${pct(result.state.inflationRate)} を反映中。支出は年ごとに増えるため、必要資金が大きくなりやすい。` }
+    : { className: "", text: `インフレ率 ${pct(result.state.inflationRate)} で試算中。物価上振れ時の感度も確認。` });
+
+  checks.push(result.state.guaranteeDebt > 0 && result.state.guaranteeReleaseStatus !== 2
+    ? { className: "warn", text: "経営者保証の解除が未確定。引退後の会社依存リスクとして、生活資金とは別枠で確認。" }
+    : { className: "", text: "経営者保証は大きな未解消リスクなし。保証契約・金融機関交渉状況を証憑で確認。" });
+
+  return checks;
+}
+
+function appendCheckItem(list, className, text) {
+  const li = document.createElement("li");
+  li.className = className;
+  li.textContent = text;
+  list.appendChild(li);
+}
+
 function renderScenarios(state) {
   const scenarios = [
-    { name: "堅実", spend: 0.9, returnShift: -0.5 },
-    { name: "標準", spend: 1, returnShift: 0 },
-    { name: "ゆとり", spend: 1.15, returnShift: -0.25 }
+    { name: "低物価", spend: 0.95, returnShift: -0.25, inflation: 0.5 },
+    { name: "標準", spend: 1, returnShift: 0, inflation: state.inflationRate },
+    { name: "物価上振れ", spend: 1.1, returnShift: -0.25, inflation: Math.max(2, state.inflationRate + 1) }
   ];
   const grid = document.getElementById("scenarioGrid");
   grid.innerHTML = "";
@@ -375,7 +516,8 @@ function renderScenarios(state) {
       monthlyHousing: state.monthlyHousing * scenario.spend,
       annualMedical: state.annualMedical * scenario.spend,
       annualDream: state.annualDream * scenario.spend,
-      retirementReturn: state.retirementReturn + scenario.returnShift
+      retirementReturn: state.retirementReturn + scenario.returnShift,
+      inflationRate: scenario.inflation
     });
     const result = calculate(adjusted);
     const card = document.createElement("article");
@@ -504,6 +646,16 @@ function yen(value) {
   const rounded = Math.round(value);
   if (!Number.isFinite(rounded)) return "-";
   return `${rounded.toLocaleString("ja-JP")}万円`;
+}
+
+function man(value) {
+  const amount = Number(value);
+  if (!Number.isFinite(amount)) return "-";
+  return `${amount.toLocaleString("ja-JP", { maximumFractionDigits: 1 })}万円`;
+}
+
+function pct(value) {
+  return `${Number(value).toLocaleString("ja-JP", { maximumFractionDigits: 1 })}%`;
 }
 
 function clamp(value, min, max) {

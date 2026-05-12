@@ -133,7 +133,8 @@ button {
 .summary-panel,
 .chart-panel,
 .action-panel,
-.scenario-panel {
+.scenario-panel,
+.basis-panel {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--surface);
@@ -358,6 +359,17 @@ textarea:focus {
   line-height: 1.7;
 }
 
+footer.mk-mini {
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted);
+  padding: 20px;
+}
+
+footer.mk-mini a {
+  color: inherit;
+}
+
 .summary-panel {
   padding: 18px;
   background: #fdfefd;
@@ -426,7 +438,8 @@ textarea:focus {
 
 .chart-panel,
 .action-panel,
-.scenario-panel {
+.scenario-panel,
+.basis-panel {
   padding: 16px;
 }
 
@@ -536,6 +549,56 @@ canvas {
   background: #fff0ef;
 }
 
+.basis-panel {
+  background: #fbfcfc;
+}
+
+.basis-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.basis-grid section {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+  background: var(--surface);
+}
+
+.basis-grid h3 {
+  margin: 0 0 8px;
+  font-size: 14px;
+}
+
+.check-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+
+.check-list li {
+  border-left: 5px solid var(--green);
+  border-radius: 7px;
+  padding: 9px 10px;
+  background: #f4faf7;
+  color: #334144;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.55;
+}
+
+.check-list li.warn {
+  border-left-color: var(--amber);
+  background: #fff6e8;
+}
+
+.check-list li.bad {
+  border-left-color: var(--red);
+  background: #fff0ef;
+}
+
 .scenario-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -619,6 +682,10 @@ canvas {
     display: none;
   }
 
+  footer.mk-mini {
+    display: none;
+  }
+
   .topbar,
   .result-column {
     position: static;
@@ -632,7 +699,8 @@ canvas {
   .summary-panel,
   .chart-panel,
   .action-panel,
-  .scenario-panel {
+  .scenario-panel,
+  .basis-panel {
     box-shadow: none;
     break-inside: avoid;
   }
