@@ -52,7 +52,7 @@ const colors = {
 };
 
 const STORAGE_KEY = "second-life-planner-state-v1";
-const VERSION = "Rev.2";
+const VERSION = "Rev.3";
 const els = {};
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -67,6 +67,13 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("saveButton").addEventListener("click", saveState);
   document.getElementById("resetButton").addEventListener("click", resetState);
   document.getElementById("printButton").addEventListener("click", () => window.print());
+  document.getElementById("closeCalc").addEventListener("click", () => document.getElementById("calcDialog").close());
+
+  document.addEventListener("click", (event) => {
+    const trigger = event.target.closest("[data-breakdown]");
+    if (!trigger) return;
+    openCalculationBreakdown(trigger.dataset.breakdown);
+  });
 
   loadState();
   update();
@@ -270,10 +277,10 @@ function simulateBalances(state, cashflows, startingCapital, oneTimeAtRetire) {
 }
 
 function renderSummary(result) {
-  setText("requiredCapital", yen(result.requiredCapital));
-  setText("personalAtRetire", yen(result.personalAtRetire));
-  setText("requiredRetirementPay", yen(result.requiredGrossRetirementPay));
-  setText("annualPreparation", `${yen(result.annualAdditionalPreparation)}/年`);
+  setHtml("requiredCapital", calcValueHtml(yen(result.requiredCapital), "requiredCapital"));
+  setHtml("personalAtRetire", calcValueHtml(yen(result.personalAtRetire), "personalAtRetire"));
+  setHtml("requiredRetirementPay", calcValueHtml(yen(result.requiredGrossRetirementPay), "requiredRetirementPay"));
+  setHtml("annualPreparation", calcValueHtml(`${yen(result.annualAdditionalPreparation)}/年`, "annualPreparation"));
 
   const statusTitle = document.getElementById("statusTitle");
   const statusPill = document.getElementById("statusPill");
@@ -291,6 +298,80 @@ function renderSummary(result) {
     statusPill.textContent = "不足";
     statusPill.classList.add("bad");
   }
+}
+
+function openCalculationBreakdown(key) {
+  const state = normalize(readState());
+  const result = calculate(state);
+  const item = getCalculationBreakdowns(result)[key];
+  if (!item) return;
+
+  document.getElementById("calcTitle").textContent = item.title;
+  document.getElementById("calcBody").innerHTML = `
+    ${item.note ? `<p class="calc-note-box">${esc(item.note)}</p>` : ""}
+    <ol class="calc-lines">
+      ${item.lines.map((line, index) => `<li><b>${index + 1}</b><code>${esc(line)}</code></li>`).join("")}
+    </ol>
+  `;
+  document.getElementById("calcDialog").showModal();
+}
+
+function getCalculationBreakdowns(result) {
+  const { state } = result;
+  const yearlyDeficitPv = Math.max(0, result.requiredCapital - result.oneTimeAtRetire);
+  const personalStartGrowth = state.personalAssetsNow * Math.pow(1 + state.preRate, state.yearsToRetire);
+  const personalContributionGrowth = result.personalAtRetire - personalStartGrowth;
+  const netShortage = Math.max(0, result.requiredCapital - result.personalAtRetire);
+  const corporateReserveGrowth = futureValue(state.corporateReserveNow, state.corporateAnnualReserve, state.preRate, state.yearsToRetire);
+
+  return {
+    requiredCapital: {
+      title: "必要資金の計算過程",
+      note: "退職時点で用意しておきたい生活資金です。各年の不足額を退職時点の価値に割り戻して、一時支出を加えています。",
+      lines: [
+        `年間基本支出 = (基本生活費 ${yen(state.monthlyLife)} + 住居費 ${yen(state.monthlyHousing)}) x 12 + 医療 ${yen(state.annualMedical)} + 趣味等 ${yen(state.annualDream)} = ${yen(result.annualBasicSpend)}/年`,
+        `退職時一時支出 = 退職時イベント ${yen(state.oneTimeEvent)} + 子・孫支援 ${yen(state.familySupport)} + 退職時借入返済 ${yen(state.debtAtRetire)} = ${yen(result.oneTimeAtRetire)}`,
+        `介護予備 = 月額 ${man(state.careMonthly)} x 12か月 x ${state.careYears}年 + 一時費用 ${yen(state.careOneTime)} = ${yen(result.careReserve)}。${result.careAge}歳時点にインフレ反映して計上`,
+        `各年不足額 = max(0, インフレ反映後支出 - 公的年金・年金保険・仕事収入・その他収入)。老後運用利回り ${pct(state.retirementReturn)} で退職時点に割引`,
+        `各年不足額の現在価値合計 ${yen(yearlyDeficitPv)} + 退職時一時支出 ${yen(result.oneTimeAtRetire)} = 必要資金 ${yen(result.requiredCapital)}`
+      ]
+    },
+    personalAtRetire: {
+      title: "個人資産見込の計算過程",
+      note: "現在の個人金融資産と、引退までの個人積立を現役中利回りで積み上げた見込額です。",
+      lines: [
+        `引退までの年数 = 引退予定年齢 ${state.retireAge}歳 - 現在年齢 ${state.currentAge}歳 = ${state.yearsToRetire}年`,
+        `現在資産の成長 = ${yen(state.personalAssetsNow)} x (1 + ${pct(state.preRetireReturn)})^${state.yearsToRetire} = ${yen(personalStartGrowth)}`,
+        `毎年の積立 = 個人の月額積立 ${yen(state.monthlySaving)} x 12か月 = ${yen(state.monthlySaving * 12)}/年`,
+        `積立の将来価値 = 年 ${yen(state.monthlySaving * 12)} を ${pct(state.preRetireReturn)} で${state.yearsToRetire}年積立 = ${yen(personalContributionGrowth)}`,
+        `現在資産の成長 ${yen(personalStartGrowth)} + 積立の将来価値 ${yen(personalContributionGrowth)} = 個人資産見込 ${yen(result.personalAtRetire)}`
+      ]
+    },
+    requiredRetirementPay: {
+      title: "必要退職金の計算過程",
+      note: "個人資産で不足する手取り額から、退職金の額面を逆算しています。税務上の損金算入目安も同時に確認します。",
+      lines: [
+        `手取り不足額 = max(0, 必要資金 ${yen(result.requiredCapital)} - 個人資産見込 ${yen(result.personalAtRetire)}) = ${yen(netShortage)}`,
+        `必要退職金 = 手取り不足額 ${yen(netShortage)} ÷ 退職金手取り率 ${pct(state.retirementNetRatio)} = ${yen(result.requiredGrossRetirementPay)}`,
+        `予定退職金との差額 = max(0, 必要退職金 ${yen(result.requiredGrossRetirementPay)} - 予定退職金 ${yen(state.plannedRetirementPay)}) = ${yen(result.retirementDesignGap)}`,
+        `功績倍率法の目安 = 最終報酬月額 ${yen(state.finalMonthlyComp)} x 在任年数 ${state.officerYears}年 x 功績倍率 ${state.meritMultiplier} = ${yen(result.retirementTaxLimit)}`,
+        `損金算入目安の超過額 = max(0, 必要退職金 ${yen(result.requiredGrossRetirementPay)} - 功績倍率法の目安 ${yen(result.retirementTaxLimit)}) = ${yen(result.requiredOverTaxLimit)}`
+      ]
+    },
+    annualPreparation: {
+      title: "追加準備の計算過程",
+      note: "必要退職金に対して、法人側で準備できる退職金原資が不足する場合の年額積立目安です。",
+      lines: [
+        `法人内準備の将来価値 = 既準備額 ${yen(state.corporateReserveNow)} と年次積立 ${yen(state.corporateAnnualReserve)}/年を ${pct(state.preRetireReturn)} で${state.yearsToRetire}年積立 = ${yen(corporateReserveGrowth)}`,
+        `退職時に使える法人原資 = 法人内準備の将来価値 ${yen(corporateReserveGrowth)} + 保険等の退職時見込額 ${yen(state.insuranceCashAtRetire)} = ${yen(result.corporatePreparedGross)}`,
+        `原資不足 = max(0, 必要退職金 ${yen(result.requiredGrossRetirementPay)} - 法人原資 ${yen(result.corporatePreparedGross)}) = ${yen(result.sourceGapForRequired)}`,
+        state.yearsToRetire > 0
+          ? `追加準備年額 = 原資不足 ${yen(result.sourceGapForRequired)} を ${pct(state.preRetireReturn)} で${state.yearsToRetire}年積み立てて作る年額 = ${yen(result.annualAdditionalPreparation)}/年`
+          : `引退予定が現在以前のため、追加準備年額 = 原資不足 ${yen(result.sourceGapForRequired)} をそのまま即時準備額として表示 = ${yen(result.annualAdditionalPreparation)}/年`,
+        `既存の法人年次積立余力 ${yen(state.corporateAnnualReserve)}/年とは別に、上記の不足を埋めるための追加目安として確認`
+      ]
+    }
+  };
 }
 
 function renderFundingChart(result) {
@@ -642,6 +723,15 @@ function setText(id, text) {
   document.getElementById(id).textContent = text;
 }
 
+function setHtml(id, html) {
+  document.getElementById(id).innerHTML = html;
+}
+
+function calcValueHtml(value, key) {
+  const text = esc(value);
+  return key ? `<button type="button" class="calc-link" data-breakdown="${esc(key)}" title="計算過程を表示">${text}</button>` : text;
+}
+
 function yen(value) {
   const rounded = Math.round(value);
   if (!Number.isFinite(rounded)) return "-";
@@ -656,6 +746,16 @@ function man(value) {
 
 function pct(value) {
   return `${Number(value).toLocaleString("ja-JP", { maximumFractionDigits: 1 })}%`;
+}
+
+function esc(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (char) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    "\"": "&quot;",
+    "'": "&#39;"
+  }[char]));
 }
 
 function clamp(value, min, max) {

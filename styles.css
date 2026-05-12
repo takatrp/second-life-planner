@@ -370,6 +370,90 @@ footer.mk-mini a {
   color: inherit;
 }
 
+.calc-dialog {
+  border: 0;
+  border-radius: 8px;
+  width: min(92vw, 720px);
+  max-width: 720px;
+  padding: 0;
+  color: var(--ink);
+  background: var(--surface);
+  box-shadow: 0 24px 80px rgba(17, 34, 40, 0.28);
+}
+
+.calc-dialog::backdrop {
+  background: rgba(20, 34, 38, 0.44);
+}
+
+.dialog-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--line);
+  background: #f8fbfa;
+}
+
+.dialog-head h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.icon-btn {
+  width: 36px;
+  min-height: 36px;
+  height: 36px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  padding: 0;
+  background: #fff;
+  color: var(--ink);
+  font-size: 22px;
+  line-height: 1;
+}
+
+#calcBody {
+  padding: 18px;
+}
+
+.calc-note-box {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.calc-lines {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.calc-lines li {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 11px;
+  background: #fbfcfc;
+}
+
+.calc-lines b {
+  display: block;
+  margin-bottom: 3px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.calc-lines code {
+  color: var(--green);
+  font-family: inherit;
+  font-weight: 800;
+  white-space: normal;
+  line-height: 1.55;
+}
+
 .summary-panel {
   padding: 18px;
   background: #fdfefd;
@@ -434,6 +518,26 @@ footer.mk-mini a {
   line-height: 1.1;
   color: var(--green);
   word-break: keep-all;
+}
+
+.calc-link {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  font-weight: inherit;
+  cursor: pointer;
+  text-align: left;
+  text-decoration: underline dotted;
+  text-underline-offset: 4px;
+}
+
+.calc-link:hover,
+.calc-link:focus-visible {
+  color: var(--blue);
 }
 
 .chart-panel,
@@ -683,6 +787,10 @@ canvas {
   }
 
   footer.mk-mini {
+    display: none;
+  }
+
+  .calc-dialog {
     display: none;
   }
 
