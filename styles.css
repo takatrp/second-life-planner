@@ -75,6 +75,14 @@ h1 {
   letter-spacing: 0;
 }
 
+.tool-purpose {
+  max-width: 620px;
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
 h2 {
   margin-bottom: 4px;
   font-size: 18px;

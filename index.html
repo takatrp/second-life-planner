@@ -12,6 +12,7 @@
       <div>
         <p class="eyebrow">Matsumoto Accounting</p>
         <h1>セカンドライフ逆算プランナー</h1>
+        <p class="tool-purpose">経営者の老後資金について、不足構造と埋め方の選択肢を一緒に整理する面談支援ツールです。</p>
       </div>
       <div class="topbar__actions">
         <button class="ghost-button" id="saveButton" type="button">保存</button>
@@ -340,7 +341,7 @@
                 <span>保険等の退職時見込額</span>
                 <input type="number" data-field="insuranceCashAtRetire" min="0" value="1500">
                 <em>万円</em>
-                <small>法人保険・積立商品等の解約返戻金や満期金の退職時見込額を仮置き。</small>
+                <small>法人側で退職時に使える積立・金融商品等の見込額を仮置き。</small>
               </label>
               <label class="input-field">
                 <span>法人借入の保証残</span>
@@ -367,7 +368,7 @@
           <span class="section-index">根拠</span>
           <div>
             <h2>プリセットの参考数値</h2>
-            <p>初期値は提案用の仮置きです。実際の提案では、ねんきん定期便、法人決算、保険設計書で上書きします。</p>
+            <p>初期値は面談の入口として置いた参考値です。実際の検討では、ねんきん定期便、法人決算、契約資料、見込額資料などで上書きします。</p>
           </div>
         </div>
         <ul class="source-list">
@@ -489,7 +490,7 @@
             <dl><dt>想定される効果</dt><dd id="optionCorporateReserveEffect"></dd><dt>構造的特徴</dt><dd id="optionCorporateReserveFeature"></dd><dt>制約・留意点</dt><dd id="optionCorporateReserveCaution"></dd></dl>
           </article>
           <article class="option-card">
-            <label><input type="checkbox" data-field="optionInsuranceReserve"><span>法人保険等による退職金原資の準備</span></label>
+            <label><input type="checkbox" data-field="optionInsuranceReserve"><span>法人側の目的別積立</span></label>
             <p id="optionInsuranceReserveContent"></p>
             <dl><dt>想定される効果</dt><dd id="optionInsuranceReserveEffect"></dd><dt>構造的特徴</dt><dd id="optionInsuranceReserveFeature"></dd><dt>制約・留意点</dt><dd id="optionInsuranceReserveCaution"></dd></dl>
           </article>
@@ -499,7 +500,7 @@
       <section class="checklist-panel">
         <div class="chart-title">
           <div>
-            <h2>提案前チェックリスト</h2>
+            <h2>前提確認チェック</h2>
             <p id="uncheckedCheckCount">未確認 7件</p>
           </div>
         </div>
@@ -510,7 +511,7 @@
           <label><input type="checkbox" data-field="checkMeritLimit">功績倍率法の目安と予定退職金の整合を確認したか</label>
           <label><input type="checkbox" data-field="checkGuaranteeDebt">法人借入の経営者保証残を確認したか</label>
           <label><input type="checkbox" data-field="checkGuaranteeRelease">保証解除の見込みを確認したか</label>
-          <label><input type="checkbox" data-field="checkInsuranceCash">法人保険・積立商品の解約返戻金見込みを確認したか</label>
+          <label><input type="checkbox" data-field="checkInsuranceCash">法人側の積立・金融商品の退職時見込額を確認したか</label>
         </div>
       </section>
 

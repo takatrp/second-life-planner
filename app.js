@@ -86,7 +86,7 @@ const proposalChecks = [
   { key: "checkMeritLimit", label: "功績倍率法の目安と予定退職金の整合を確認したか", homework: "最終報酬月額・在任年数・功績倍率の整合を確認する" },
   { key: "checkGuaranteeDebt", label: "法人借入の経営者保証残を確認したか", homework: "法人借入の保証残と保証契約を確認する" },
   { key: "checkGuaranteeRelease", label: "保証解除の見込みを確認したか", homework: "事業承継時の保証解除条件を確認する" },
-  { key: "checkInsuranceCash", label: "法人保険・積立商品の解約返戻金見込みを確認したか", homework: "保険・積立商品の解約返戻金見込みを設計書で確認する" }
+  { key: "checkInsuranceCash", label: "法人側の積立・金融商品の退職時見込額を確認したか", homework: "法人側の積立・金融商品の退職時見込額を資料で確認する" }
 ];
 
 const optionDefinitions = [
@@ -127,10 +127,10 @@ const optionDefinitions = [
   },
   {
     key: "optionInsuranceReserve",
-    title: "法人保険等による退職金原資の準備",
-    content: "法人保険・積立商品等を使い、退職時点の原資準備を目的化する。",
-    feature: "退職時点を目的化した積立、事業資金との分離、保障機能を併せ持つ構造がある。",
-    caution: "解約返戻率、損金性、保障額、途中解約リスク、資金繰りへの影響を確認する。"
+    title: "法人側の目的別積立",
+    content: "法人側で退職時点に使う資金を、目的を分けて積み立てる。",
+    feature: "通常の事業資金と目的を分け、退職時点に向けた原資を管理しやすい。",
+    caution: "商品性、換金時期、税務処理、途中解約リスク、資金繰りへの影響を確認する。"
   }
 ];
 
@@ -562,7 +562,7 @@ function renderAccuracyStatus(result) {
   });
   if (unchecked.length > visibleItems.length) {
     const li = document.createElement("li");
-    li.textContent = `ほか ${unchecked.length - visibleItems.length}件。下の「提案前チェックリスト」を確認してください。`;
+    li.textContent = `ほか ${unchecked.length - visibleItems.length}件。下の「前提確認チェック」を確認してください。`;
     nextSteps.appendChild(li);
   }
   if (!unchecked.length) {
@@ -575,7 +575,7 @@ function renderAccuracyStatus(result) {
   const usingInitialValues = isUsingInitialValues(result.state);
   warning.hidden = !usingInitialValues;
   if (usingInitialValues) {
-    warning.textContent = "初期値のまま試算しています。実数値で上書きしてください。";
+    warning.textContent = "参考値のまま試算しています。確認した実数値で上書きしてください。";
   }
 }
 
@@ -591,7 +591,7 @@ function getAccuracyStatus(state) {
       key: "ready",
       className: "ready",
       label: "提案可能水準",
-      text: "下の提案前チェックリストはすべて確認済みです。提案書化の前に証憑保存を確認してください。"
+      text: "下の前提確認チェックはすべて確認済みです。提案書化の前に証憑保存を確認してください。"
     };
   }
   if (checkedCount >= 3) {
@@ -599,14 +599,14 @@ function getAccuracyStatus(state) {
       key: "meeting",
       className: "meeting",
       label: "面談用試算",
-      text: "一部確認済みです。提案可能水準にするには、下の未確認項目を埋めてください。"
+      text: "一部確認済みです。提案可能水準にするには、下の前提確認チェックを埋めてください。"
     };
   }
   return {
     key: "draft",
     className: "draft",
     label: "仮置き試算",
-    text: "下の提案前チェックリストに未確認項目があります。この状態の数字は提案には使えません。"
+    text: "下の前提確認チェックに未確認項目があります。この状態の数字は提案には使えません。"
   };
 }
 
@@ -755,7 +755,7 @@ function buildValidationChecks(result) {
 
   checks.push(result.state.pensionSelfChecked
     ? { className: "", text: "本人年金額は確認済み扱い。ねんきん定期便等の金額で入力されている前提。" }
-    : { className: "warn", text: "本人年金額が未確認。初期値160万円のまま提案書に進めない。" });
+    : { className: "warn", text: "本人年金額が未確認。参考値160万円のまま提案書に進めない。" });
 
   if (result.state.hasSpouse) {
     checks.push(result.state.pensionSpouseChecked
