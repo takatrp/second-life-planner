@@ -54,6 +54,23 @@ textarea {
   gap: 20px;
 }
 
+.brand-block {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.brand-logo {
+  width: 52px;
+  height: 52px;
+  flex: 0 0 auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  object-fit: contain;
+  background: #fff;
+}
+
 .eyebrow {
   margin: 0 0 4px;
   color: var(--green);
@@ -1022,6 +1039,11 @@ canvas {
     align-items: flex-start;
     flex-direction: column;
     padding: 14px 0;
+  }
+
+  .brand-logo {
+    width: 46px;
+    height: 46px;
   }
 
   .app-shell {
