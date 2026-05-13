@@ -418,6 +418,33 @@
             <small>法人側の年額目安</small>
           </article>
         </div>
+        <div class="reverse-equation" aria-label="必要資金の逆算構造">
+          <div class="reverse-equation__title">
+            <h3>逆算の構造</h3>
+            <p>必要資金を、個人資産見込と必要退職金の手取りで埋める関係です。</p>
+          </div>
+          <div class="equation-row">
+            <div class="equation-term equation-term--need">
+              <span>必要資金</span>
+              <strong id="equationNeed">-</strong>
+            </div>
+            <b>=</b>
+            <div class="equation-term">
+              <span>個人資産見込</span>
+              <strong id="equationPersonal">-</strong>
+            </div>
+            <b>+</b>
+            <div class="equation-term">
+              <span>必要退職金手取</span>
+              <strong id="equationRetirementNet">-</strong>
+            </div>
+          </div>
+          <div class="equation-bar" aria-hidden="true">
+            <span class="equation-bar__personal" id="equationPersonalBar"></span>
+            <span class="equation-bar__retirement" id="equationRetirementBar"></span>
+          </div>
+          <p class="equation-note" id="equationNote">-</p>
+        </div>
       </section>
 
       <section class="action-panel choice-panel">

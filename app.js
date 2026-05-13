@@ -370,6 +370,7 @@ function renderSummary(result) {
   setHtml("personalAtRetire", calcValueHtml(yen(result.personalAtRetire), "personalAtRetire"));
   setHtml("requiredRetirementPay", calcValueHtml(yen(result.requiredGrossRetirementPay), "requiredRetirementPay"));
   setHtml("annualPreparation", calcValueHtml(`${yen(result.annualAdditionalPreparation)}/年`, "annualPreparation"));
+  renderReverseEquation(result);
 
   const statusTitle = document.getElementById("statusTitle");
   const statusPill = document.getElementById("statusPill");
@@ -387,6 +388,26 @@ function renderSummary(result) {
     statusPill.textContent = "不足";
     statusPill.classList.add("bad");
   }
+}
+
+function renderReverseEquation(result) {
+  const need = Math.max(0, result.requiredCapital);
+  const personalApplied = Math.min(Math.max(0, result.personalAtRetire), need);
+  const retirementNet = Math.max(0, result.requiredNetFromCompany);
+  const personalShare = need > 0 ? (personalApplied / need) * 100 : 0;
+  const retirementShare = need > 0 ? (retirementNet / need) * 100 : 0;
+  const surplusPersonal = Math.max(0, result.personalAtRetire - need);
+
+  setHtml("equationNeed", calcValueHtml(yen(need), "requiredCapital"));
+  setHtml("equationPersonal", calcValueHtml(yen(personalApplied), "personalAtRetire"));
+  setHtml("equationRetirementNet", calcValueHtml(yen(retirementNet), "requiredRetirementPay"));
+  document.getElementById("equationPersonalBar").style.width = `${clamp(personalShare, 0, 100)}%`;
+  document.getElementById("equationRetirementBar").style.width = `${clamp(retirementShare, 0, 100)}%`;
+
+  const note = surplusPersonal > 0
+    ? `個人資産見込は必要資金を ${yen(surplusPersonal)} 上回るため、必要退職金手取は0円です。`
+    : `必要退職金手取 ${yen(retirementNet)} を額面に直すと、必要退職金 ${yen(result.requiredGrossRetirementPay)} です。`;
+  setText("equationNote", note);
 }
 
 function openCalculationBreakdown(key) {
