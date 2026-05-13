@@ -96,7 +96,7 @@
           </div>
         </div>
         <div class="field-grid">
-          <label class="input-field">
+          <label class="input-field preset-field">
             <span>基本生活費</span>
             <input type="number" data-field="monthlyLife" min="0" value="45">
             <em>万円/月</em>
@@ -132,7 +132,7 @@
             <em>万円</em>
             <small>教育・結婚・住宅・節目祝い等の支援を一括予備費として仮置き。</small>
           </label>
-          <label class="input-field">
+          <label class="input-field preset-field">
             <span>介護月額</span>
             <input type="number" data-field="careMonthly" min="0" step="0.1" value="8.3">
             <em>万円/月</em>
@@ -168,7 +168,7 @@
           </div>
         </div>
         <div class="field-grid">
-          <label class="input-field">
+          <label class="input-field preset-field">
             <span>本人の公的年金</span>
             <input type="number" data-field="pensionSelf" min="0" value="160">
             <em>万円/年</em>
@@ -182,7 +182,7 @@
             </select>
             <small>未確認のままでは結果欄に警告を出します。</small>
           </label>
-          <label class="input-field">
+          <label class="input-field preset-field">
             <span>配偶者の公的年金</span>
             <input type="number" data-field="pensionSpouse" min="0" value="90">
             <em>万円/年</em>
@@ -208,7 +208,7 @@
             <em>年</em>
             <small>10年確定年金型を想定した初期値。終身型は長めに調整。</small>
           </label>
-          <label class="input-field">
+          <label class="input-field preset-field">
             <span>退職後の仕事収入</span>
             <input type="number" data-field="workIncome" min="0" value="120">
             <em>万円/年</em>
@@ -240,7 +240,7 @@
             <em>%</em>
             <small>取り崩し期は元本保全寄りとして年1%の控えめな仮置き。</small>
           </label>
-          <label class="input-field">
+          <label class="input-field preset-field">
             <span>老後支出インフレ率</span>
             <input type="number" data-field="inflationRate" step="0.1" value="2.0">
             <em>%</em>
@@ -264,13 +264,13 @@
               <h3>個人で作る資産</h3>
             </div>
             <div class="field-grid">
-              <label class="input-field">
+              <label class="input-field preset-field">
                 <span>現在の個人金融資産</span>
                 <input type="number" data-field="personalAssetsNow" min="0" value="1500">
                 <em>万円</em>
                 <small>預貯金・証券・NISA等の合計。例示値として1,500万円から開始。</small>
               </label>
-              <label class="input-field">
+              <label class="input-field preset-field">
                 <span>個人の積立</span>
                 <input type="number" data-field="monthlySaving" min="0" value="20">
                 <em>万円/月</em>
@@ -294,7 +294,7 @@
               <a class="detail-button" href="https://takatrp.github.io/taishoku/" target="_blank" rel="noopener">詳しく試算</a>
             </div>
             <div class="field-grid">
-              <label class="input-field">
+              <label class="input-field preset-field">
                 <span>予定退職金</span>
                 <input type="number" data-field="plannedRetirementPay" min="0" value="2500">
                 <em>万円</em>
@@ -306,7 +306,7 @@
                 <em>%</em>
                 <small>退職所得控除や2分の1課税を簡易反映する概算率。正確な手取りは「詳しく試算」で確認。</small>
               </label>
-              <label class="input-field">
+              <label class="input-field preset-field">
                 <span>最終報酬月額</span>
                 <input type="number" data-field="finalMonthlyComp" min="0" value="120">
                 <em>万円/月</em>
@@ -318,7 +318,7 @@
                 <em>年</em>
                 <small>法人登記・議事録で確認。代表取締役以外の期間は扱いを個別確認。</small>
               </label>
-              <label class="input-field">
+              <label class="input-field preset-field">
                 <span>功績倍率</span>
                 <input type="number" data-field="meritMultiplier" min="0" step="0.1" value="3.0">
                 <em>倍</em>
@@ -336,7 +336,7 @@
                 <em>万円/年</em>
                 <small>継続MAS側で資金繰り確認する年100万円台の準備例。月10万円相当。</small>
               </label>
-              <label class="input-field">
+              <label class="input-field preset-field">
                 <span>保険等の退職時見込額</span>
                 <input type="number" data-field="insuranceCashAtRetire" min="0" value="1500">
                 <em>万円</em>
@@ -393,6 +393,7 @@
         <div class="precision-status draft" id="precisionStatus">
           <strong>仮置き試算</strong>
           <span>主要な確認項目が未確認です。この状態の数字は提案には使えません。</span>
+          <ul id="precisionNextSteps"></ul>
         </div>
         <p class="initial-warning" id="initialValueWarning" hidden>初期値のまま試算しています。実数値で上書きしてください。</p>
         <div class="kpi-grid">

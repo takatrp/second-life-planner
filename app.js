@@ -527,9 +527,28 @@ function renderAccuracyStatus(result) {
   const box = document.getElementById("precisionStatus");
   const warning = document.getElementById("initialValueWarning");
   const summaryPanel = document.querySelector(".summary-panel");
+  const nextSteps = document.getElementById("precisionNextSteps");
+  const unchecked = getUncheckedProposalChecks(result.state);
   box.className = `precision-status ${status.className}`;
   box.querySelector("strong").textContent = status.label;
   box.querySelector("span").textContent = status.text;
+  nextSteps.innerHTML = "";
+  const visibleItems = unchecked.slice(0, 4);
+  visibleItems.forEach((item) => {
+    const li = document.createElement("li");
+    li.textContent = item.label;
+    nextSteps.appendChild(li);
+  });
+  if (unchecked.length > visibleItems.length) {
+    const li = document.createElement("li");
+    li.textContent = `ほか ${unchecked.length - visibleItems.length}件。下の「提案前チェックリスト」を確認してください。`;
+    nextSteps.appendChild(li);
+  }
+  if (!unchecked.length) {
+    const li = document.createElement("li");
+    li.textContent = "解除条件はすべて満たしています。証憑の保存状況を確認してください。";
+    nextSteps.appendChild(li);
+  }
   summaryPanel.classList.toggle("is-provisional", status.key === "draft");
 
   const usingInitialValues = isUsingInitialValues(result.state);
@@ -551,7 +570,7 @@ function getAccuracyStatus(state) {
       key: "ready",
       className: "ready",
       label: "提案可能水準",
-      text: "主要な確認項目がすべて確認済みです。提案書化の前に証憑保存を確認してください。"
+      text: "下の提案前チェックリストはすべて確認済みです。提案書化の前に証憑保存を確認してください。"
     };
   }
   if (checkedCount >= 3) {
@@ -559,14 +578,14 @@ function getAccuracyStatus(state) {
       key: "meeting",
       className: "meeting",
       label: "面談用試算",
-      text: "一部確認済みですが、提案前に未確認項目を埋める必要があります。"
+      text: "一部確認済みです。提案可能水準にするには、下の未確認項目を埋めてください。"
     };
   }
   return {
     key: "draft",
     className: "draft",
     label: "仮置き試算",
-    text: "主要な確認項目が未確認です。この状態の数字は提案には使えません。"
+    text: "下の提案前チェックリストに未確認項目があります。この状態の数字は提案には使えません。"
   };
 }
 
