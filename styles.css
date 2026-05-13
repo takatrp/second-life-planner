@@ -134,7 +134,9 @@ button {
 .chart-panel,
 .action-panel,
 .scenario-panel,
-.basis-panel {
+.basis-panel,
+.checklist-panel,
+.summary-output-panel {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--surface);
@@ -203,6 +205,20 @@ label {
   color: #3d494c;
   font-size: 12px;
   font-weight: 700;
+}
+
+.input-column .field-grid .input-field > span::after,
+.input-column .textarea-field > span::after {
+  content: "※提案用仮置き値";
+  display: inline-flex;
+  margin-left: 6px;
+  border-radius: 999px;
+  padding: 1px 6px;
+  background: #fff6e8;
+  color: var(--amber);
+  font-size: 10px;
+  font-weight: 900;
+  vertical-align: middle;
 }
 
 .field-grid .input-field {
@@ -359,6 +375,11 @@ textarea:focus {
   line-height: 1.7;
 }
 
+.source-list a {
+  color: var(--green);
+  font-weight: 800;
+}
+
 footer.mk-mini {
   text-align: center;
   font-size: 12px;
@@ -459,6 +480,10 @@ footer.mk-mini a {
   background: #fdfefd;
 }
 
+.summary-panel.is-provisional .kpi-grid {
+  opacity: 0.46;
+}
+
 .summary-head {
   display: flex;
   justify-content: space-between;
@@ -488,6 +513,52 @@ footer.mk-mini a {
 
 .status-pill.bad {
   background: var(--red);
+}
+
+.precision-status {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: #f4faf7;
+  color: #334144;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.precision-status strong {
+  color: var(--green);
+  font-size: 14px;
+}
+
+.precision-status.draft {
+  border-color: #e4b0a9;
+  background: #fff0ef;
+}
+
+.precision-status.draft strong {
+  color: var(--red);
+}
+
+.precision-status.meeting {
+  border-color: #e1c993;
+  background: #fff6e8;
+}
+
+.precision-status.meeting strong {
+  color: var(--amber);
+}
+
+.initial-warning {
+  margin: 0 0 12px;
+  border-radius: 8px;
+  padding: 9px 10px;
+  background: #fff0ef;
+  color: var(--red);
+  font-size: 12px;
+  font-weight: 800;
 }
 
 .kpi-grid {
@@ -543,42 +614,19 @@ footer.mk-mini a {
 .chart-panel,
 .action-panel,
 .scenario-panel,
-.basis-panel {
+.basis-panel,
+.checklist-panel,
+.summary-output-panel {
   padding: 16px;
 }
 
-.action-panel--priority {
-  border: 2px solid #c78425;
-  padding: 18px;
-  background: linear-gradient(180deg, #fff9ea 0%, #ffffff 100%);
-  box-shadow: 0 22px 54px rgba(116, 78, 16, 0.16);
-}
-
-.action-panel--priority .chart-title {
+.choice-panel .chart-title {
   display: block;
 }
 
-.action-panel--priority .chart-title p {
+.choice-panel .chart-title p {
   margin-top: 6px;
   text-align: left;
-}
-
-.action-panel--priority h2 {
-  margin-top: 4px;
-  font-size: 22px;
-  white-space: nowrap;
-}
-
-.priority-label {
-  display: inline-flex;
-  align-items: center;
-  min-height: 24px;
-  border-radius: 999px;
-  padding: 4px 10px;
-  color: #fff;
-  background: var(--red);
-  font-size: 12px;
-  font-weight: 900;
 }
 
 .chart-title {
@@ -587,6 +635,132 @@ footer.mk-mini a {
   gap: 14px;
   align-items: baseline;
   margin-bottom: 10px;
+}
+
+.cause-box {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+  background: #fbfcfc;
+}
+
+.cause-box strong {
+  display: block;
+  color: var(--green);
+  font-size: 16px;
+}
+
+.cause-box p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.choice-title {
+  margin-top: 14px;
+}
+
+.choice-title h3 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.choice-title p {
+  margin: 4px 0 10px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.option-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.option-card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+  background: #fbfcfc;
+  min-height: 250px;
+}
+
+.option-card label {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.option-card input,
+.proposal-checks input {
+  width: auto;
+  height: auto;
+  margin-top: 3px;
+  accent-color: var(--green);
+}
+
+.option-card p {
+  min-height: 42px;
+  margin: 8px 0 10px;
+  color: #3d494c;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.option-card dl {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+}
+
+.option-card dt {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.option-card dd {
+  min-height: 36px;
+  margin: 0;
+  color: #334144;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.proposal-checks {
+  display: grid;
+  gap: 8px;
+}
+
+.proposal-checks label {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 9px 10px;
+  background: #fbfcfc;
+  color: #334144;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.5;
+}
+
+.summary-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 10px 0;
+}
+
+.summary-output {
+  min-height: 220px;
+  background: #fbfcfc;
+  font-size: 12px;
 }
 
 .chart-title p {
@@ -622,35 +796,6 @@ canvas {
   height: 11px;
   border-radius: 3px;
   display: inline-block;
-}
-
-#actionList {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: grid;
-  gap: 10px;
-}
-
-#actionList li {
-  border: 1px solid #cfded8;
-  border-left: 6px solid var(--green);
-  border-radius: 8px;
-  padding: 11px 12px;
-  background: #f4faf7;
-  font-size: 13px;
-  font-weight: 700;
-  line-height: 1.55;
-}
-
-#actionList li.warn {
-  border-left-color: var(--amber);
-  background: #fff6e8;
-}
-
-#actionList li.bad {
-  border-left-color: var(--red);
-  background: #fff0ef;
 }
 
 .basis-panel {
@@ -768,7 +913,8 @@ canvas {
   .field-grid.compact,
   .asset-group .field-grid,
   .kpi-grid,
-  .scenario-grid {
+  .scenario-grid,
+  .option-grid {
     grid-template-columns: 1fr;
   }
 
@@ -808,7 +954,9 @@ canvas {
   .chart-panel,
   .action-panel,
   .scenario-panel,
-  .basis-panel {
+  .basis-panel,
+  .checklist-panel,
+  .summary-output-panel {
     box-shadow: none;
     break-inside: avoid;
   }

@@ -40,7 +40,21 @@ const fields = {
   corporateAnnualReserve: 120,
   insuranceCashAtRetire: 1500,
   guaranteeDebt: 0,
-  guaranteeReleaseStatus: 0
+  guaranteeReleaseStatus: 0,
+  optionSpendReview: false,
+  optionRetireLater: false,
+  optionWorkIncome: false,
+  optionPersonalSaving: false,
+  optionCorporateReserve: false,
+  optionInsuranceReserve: false,
+  selectedDirection: "",
+  checkNenkinSelf: false,
+  checkNenkinSpouse: false,
+  checkRetirementRule: false,
+  checkMeritLimit: false,
+  checkGuaranteeDebt: false,
+  checkGuaranteeRelease: false,
+  checkInsuranceCash: false
 };
 
 const colors = {
@@ -52,8 +66,73 @@ const colors = {
 };
 
 const STORAGE_KEY = "second-life-planner-state-v1";
-const VERSION = "Rev.3";
+const VERSION = "Rev.4";
 const els = {};
+
+const coreAssumptionFields = [
+  "vision", "currentAge", "retireAge", "lifeAge", "pensionStartAge", "hasSpouse", "spouseAge",
+  "monthlyLife", "monthlyHousing", "annualMedical", "annualDream", "oneTimeEvent", "familySupport",
+  "careMonthly", "careYears", "careOneTime", "debtAtRetire", "pensionSelf", "pensionSpouse",
+  "annuityAnnual", "annuityYears", "workIncome", "workIncomeType", "workUntilAge", "otherIncome",
+  "retirementReturn", "inflationRate", "personalAssetsNow", "monthlySaving", "preRetireReturn",
+  "plannedRetirementPay", "retirementNetRatio", "finalMonthlyComp", "officerYears", "meritMultiplier",
+  "corporateReserveNow", "corporateAnnualReserve", "insuranceCashAtRetire", "guaranteeDebt", "guaranteeReleaseStatus"
+];
+
+const proposalChecks = [
+  { key: "checkNenkinSelf", label: "ねんきん定期便を確認したか", homework: "本人のねんきん定期便を確認する" },
+  { key: "checkNenkinSpouse", label: "配偶者の年金加入歴を確認したか", homework: "配偶者の年金加入歴、加給年金・振替加算を確認する" },
+  { key: "checkRetirementRule", label: "役員退職給与規程を確認したか", homework: "役員退職給与規程と議事録を確認する" },
+  { key: "checkMeritLimit", label: "功績倍率法の目安と予定退職金の整合を確認したか", homework: "最終報酬月額・在任年数・功績倍率の整合を確認する" },
+  { key: "checkGuaranteeDebt", label: "法人借入の経営者保証残を確認したか", homework: "法人借入の保証残と保証契約を確認する" },
+  { key: "checkGuaranteeRelease", label: "保証解除の見込みを確認したか", homework: "事業承継時の保証解除条件を確認する" },
+  { key: "checkInsuranceCash", label: "法人保険・積立商品の解約返戻金見込みを確認したか", homework: "保険・積立商品の解約返戻金見込みを設計書で確認する" }
+];
+
+const optionDefinitions = [
+  {
+    key: "optionSpendReview",
+    title: "支出水準の見直し",
+    content: "基本生活費、住居費、趣味・旅行、介護想定を見直し、必要資金そのものを下げる。",
+    feature: "会社側の資金繰りや税務設計に依存せず、生活設計から不足を圧縮できる。",
+    caution: "ありたい老後を削りすぎると納得感が落ちるため、削る項目と残す項目を分ける。"
+  },
+  {
+    key: "optionRetireLater",
+    title: "引退時期の延長",
+    content: "引退予定を後ろにずらし、積立期間と収入期間を伸ばす。",
+    feature: "個人資産形成と法人準備の期間を同時に確保しやすい。",
+    caution: "健康、後継者、現場負担、金融機関との関係を合わせて確認する。"
+  },
+  {
+    key: "optionWorkIncome",
+    title: "引退後収入の継続",
+    content: "顧問料、相談役収入、事業収入などを一定期間残す。",
+    feature: "退職直後の取り崩しを抑え、必要退職金を圧縮しやすい。",
+    caution: "役員報酬・給与として受ける場合は在職老齢年金の調整を確認する。"
+  },
+  {
+    key: "optionPersonalSaving",
+    title: "個人積立の増額",
+    content: "NISA、小規模企業共済、預貯金など個人側の積立額を増やす。",
+    feature: "会社に依存しない老後資金を増やし、退職金への依存度を下げられる。",
+    caution: "役員報酬、所得税・住民税、家計キャッシュフローとの両立を確認する。"
+  },
+  {
+    key: "optionCorporateReserve",
+    title: "法人内部留保の積み増し",
+    content: "利益計画と資金繰りの中で、退職金原資に回せる内部留保を増やす。",
+    feature: "法人資金として柔軟性を残しながら、退職金原資の不足を埋められる。",
+    caution: "運転資金、納税、借入返済、設備投資との優先順位を継続MAS等で確認する。"
+  },
+  {
+    key: "optionInsuranceReserve",
+    title: "法人保険等による退職金原資の準備",
+    content: "法人保険・積立商品等を使い、退職時点の原資準備を目的化する。",
+    feature: "退職時点を目的化した積立、事業資金との分離、保障機能を併せ持つ構造がある。",
+    caution: "解約返戻率、損金性、保障額、途中解約リスク、資金繰りへの影響を確認する。"
+  }
+];
 
 document.addEventListener("DOMContentLoaded", () => {
   syncFooterMeta();
@@ -68,6 +147,8 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("resetButton").addEventListener("click", resetState);
   document.getElementById("printButton").addEventListener("click", () => window.print());
   document.getElementById("closeCalc").addEventListener("click", () => document.getElementById("calcDialog").close());
+  document.getElementById("generateSummaryButton").addEventListener("click", generateIssueSummary);
+  document.getElementById("downloadSummaryJsonButton").addEventListener("click", downloadSummaryJson);
 
   document.addEventListener("click", (event) => {
     const trigger = event.target.closest("[data-breakdown]");
@@ -86,6 +167,8 @@ function readState() {
     if (!element) continue;
     if (element.tagName === "TEXTAREA") {
       state[key] = element.value.trim();
+    } else if (element.type === "checkbox") {
+      state[key] = element.checked;
     } else if (element.tagName === "SELECT") {
       state[key] = Number(element.value);
     } else {
@@ -99,7 +182,11 @@ function readState() {
 function writeState(state) {
   for (const [key, fallback] of Object.entries(fields)) {
     if (!els[key]) continue;
-    els[key].value = state[key] ?? fallback;
+    if (els[key].type === "checkbox") {
+      els[key].checked = Boolean(state[key] ?? fallback);
+    } else {
+      els[key].value = state[key] ?? fallback;
+    }
   }
 }
 
@@ -153,8 +240,10 @@ function update() {
   renderSummary(result);
   renderFundingChart(result);
   renderBalanceChart(result);
-  renderActions(result);
+  renderAccuracyStatus(result);
+  renderShortageChoices(result);
   renderBasis(result);
+  renderProposalChecklist(result);
   renderScenarios(state);
 }
 
@@ -418,104 +507,179 @@ function renderBalanceChart(result) {
   }
 }
 
-function renderActions(result) {
-  const list = document.getElementById("actionList");
-  list.innerHTML = "";
-  const items = [];
-  const years = result.state.yearsToRetire;
+function renderShortageChoices(result) {
+  const diagnosis = diagnoseShortageCause(result);
+  setText("shortageCauseTitle", diagnosis.title);
+  setText("shortageCauseText", diagnosis.text);
 
-  if (result.requiredOverTaxLimit > 0) {
-    items.push({
-      className: "bad",
-      text: `税務限度チェック: 逆算した必要退職金が功績倍率法の目安を ${yen(result.requiredOverTaxLimit)} 超過。最終報酬月額・在任年数・功績倍率を確認し、過大退職金リスクを先に説明。`
-    });
-  } else if (result.plannedOverTaxLimit > 0) {
-    items.push({
-      className: "bad",
-      text: `税務限度チェック: 予定退職金が功績倍率法の目安を ${yen(result.plannedOverTaxLimit)} 超過。支給額の根拠資料と損金算入可能性を詳細試算で確認。`
-    });
-  } else {
-    items.push({
-      className: "",
-      text: "税務限度チェック: 逆算額・予定額はいずれも功績倍率法の目安内。最終報酬月額、在任年数、功績倍率の根拠資料を残す。"
-    });
-  }
-
-  if (result.retirementDesignGap > 0) {
-    items.push({
-      className: "bad",
-      text: `退職金設計: 予定退職金は必要額より ${yen(result.retirementDesignGap)} 不足。詳細試算で役員退職給与規程、功績倍率、支給時期を確認。`
-    });
-  } else {
-    items.push({
-      className: "",
-      text: "退職金設計: 予定退職金は手取り不足の逆算額を概ねカバー。過大支給にならない根拠資料を整える段階。"
-    });
-  }
-
-  if (result.sourceGapForRequired > 0) {
-    items.push({
-      className: result.sourceGapForRequired > 1000 ? "bad" : "warn",
-      text: `法人準備: 必要退職金の原資は ${yen(result.sourceGapForRequired)} 不足。内部留保、保険、投資余力で年 ${yen(result.annualAdditionalPreparation)} の追加準備が目安。`
-    });
-  } else {
-    items.push({
-      className: "",
-      text: "法人準備: 退職金原資は必要水準に到達見込み。継続MAS側では資金繰りと税負担の接続を確認。"
-    });
-  }
-
-  if (result.personalAtRetire >= result.requiredCapital * 0.55) {
-    items.push({
-      className: "",
-      text: "個人資産形成: 個人資産の寄与が大きいため、退職金は生活保障より税務・事業承継・資金繰りとのバランスで設計。"
-    });
-  } else {
-    items.push({
-      className: "warn",
-      text: "個人資産形成: 個人資産だけでは老後資金の半分に届きにくい。NISA・小規模企業共済・個人年金などの個人側積立も同時に検討。"
-    });
-  }
-
-  if (years <= 5) {
-    items.push({
-      className: "bad",
-      text: "実行時期: 引退まで5年以内。新規積立より、支給可能額、既存資産、退職後収入の確定度を優先して確認。"
-    });
-  } else {
-    items.push({
-      className: "",
-      text: `実行時期: 引退まで${years}年。毎年の利益計画と資金繰りに退職金準備額を組み込み、無理なく積み立てる。`
-    });
-  }
-
-  if (!result.state.pensionSelfChecked || (result.state.hasSpouse && !result.state.pensionSpouseChecked)) {
-    items.push({
-      className: "warn",
-      text: "年金確認: 初期値のまま提案しない。本人・配偶者のねんきん定期便、加入歴、加給年金・振替加算の有無を面談前に上書き確認。"
-    });
-  }
-
-  if (result.state.workIncome > 0 && result.state.workIncomeType === 1 && result.state.workUntilAge > result.state.pensionStartAge) {
-    items.push({
-      className: "warn",
-      text: "在職老齢年金: 退職後収入を役員報酬・給与として受ける期間が年金開始後に重なる。年金調整の有無を別途確認。"
-    });
-  }
-
-  if (result.state.guaranteeDebt > 0 && result.state.guaranteeReleaseStatus !== 2) {
-    items.push({
-      className: "warn",
-      text: `経営者保証: 法人借入の保証残 ${yen(result.state.guaranteeDebt)} について、承継時の解除条件を確認。生活資金とは別に、会社依存が残る論点として扱う。`
-    });
-  }
-
-  items.forEach((item) => {
-    const li = document.createElement("li");
-    li.className = item.className;
-    li.textContent = item.text;
-    list.appendChild(li);
+  const state = result.state;
+  const effects = estimateOptionEffects(state);
+  optionDefinitions.forEach((option) => {
+    setText(`${option.key}Content`, option.content);
+    setText(`${option.key}Effect`, effects[option.key]);
+    setText(`${option.key}Feature`, option.feature);
+    setText(`${option.key}Caution`, option.caution);
   });
+}
+
+function renderAccuracyStatus(result) {
+  const status = getAccuracyStatus(result.state);
+  const box = document.getElementById("precisionStatus");
+  const warning = document.getElementById("initialValueWarning");
+  const summaryPanel = document.querySelector(".summary-panel");
+  box.className = `precision-status ${status.className}`;
+  box.querySelector("strong").textContent = status.label;
+  box.querySelector("span").textContent = status.text;
+  summaryPanel.classList.toggle("is-provisional", status.key === "draft");
+
+  const usingInitialValues = isUsingInitialValues(result.state);
+  warning.hidden = !usingInitialValues;
+  if (usingInitialValues) {
+    warning.textContent = "初期値のまま試算しています。実数値で上書きしてください。";
+  }
+}
+
+function renderProposalChecklist(result) {
+  const unchecked = getUncheckedProposalChecks(result.state);
+  setText("uncheckedCheckCount", unchecked.length ? `未確認 ${unchecked.length}件` : "すべて確認済み");
+}
+
+function getAccuracyStatus(state) {
+  const checkedCount = proposalChecks.filter((item) => Boolean(state[item.key])).length;
+  if (checkedCount === proposalChecks.length) {
+    return {
+      key: "ready",
+      className: "ready",
+      label: "提案可能水準",
+      text: "主要な確認項目がすべて確認済みです。提案書化の前に証憑保存を確認してください。"
+    };
+  }
+  if (checkedCount >= 3) {
+    return {
+      key: "meeting",
+      className: "meeting",
+      label: "面談用試算",
+      text: "一部確認済みですが、提案前に未確認項目を埋める必要があります。"
+    };
+  }
+  return {
+    key: "draft",
+    className: "draft",
+    label: "仮置き試算",
+    text: "主要な確認項目が未確認です。この状態の数字は提案には使えません。"
+  };
+}
+
+function getUncheckedProposalChecks(state) {
+  return proposalChecks.filter((item) => !state[item.key]);
+}
+
+function isUsingInitialValues(state) {
+  const defaults = normalize({ ...fields });
+  return coreAssumptionFields.every((key) => {
+    if (!(key in fields)) return true;
+    return String(state[key] ?? "") === String(defaults[key] ?? "");
+  });
+}
+
+function diagnoseShortageCause(result) {
+  const state = result.state;
+  const baseGap = getOverallShortage(result);
+  if (baseGap <= 0) {
+    return {
+      title: "不足は小さい状態です",
+      text: "現在の入力では、生活資金と退職金原資の不足は大きくありません。未確認事項の確認後に再判定します。"
+    };
+  }
+
+  const pensionRisk = estimatePensionRisk(state, baseGap);
+  const scores = [
+    { key: "personal", label: "個人資産の積立不足", value: Math.max(0, result.requiredCapital * 0.45 - result.personalAtRetire) },
+    { key: "corporate", label: "法人準備不足", value: result.sourceGapForRequired },
+    { key: "pension", label: "公的年金期待過大", value: pensionRisk },
+    { key: "spending", label: "支出過大", value: estimateReduction(state, (draft) => reduceSpending(draft, 0.9)) }
+  ].sort((a, b) => b.value - a.value);
+
+  const top = scores[0];
+  const second = scores[1];
+  if (!top || top.value <= 0) {
+    return {
+      title: "不足の主因は特定しにくい状態です",
+      text: "不足は複数の前提に薄く分散しています。各入力値の確認後に再判定します。"
+    };
+  }
+
+  if (second && second.value >= top.value * 0.85) {
+    return {
+      title: `不足は${top.label}と${second.label}の複合要因です`,
+      text: `寄与度は ${top.label} ${yen(top.value)}、${second.label} ${yen(second.value)} が近い水準です。`
+    };
+  }
+
+  return {
+    title: `不足の主因は${top.label}です`,
+    text: `現在の入力では、${top.label}の寄与度が最も大きい状態です。`
+  };
+}
+
+function estimateOptionEffects(state) {
+  return {
+    optionSpendReview: formatEffect(estimateReduction(state, (draft) => reduceSpending(draft, 0.9))),
+    optionRetireLater: formatEffect(estimateReduction(state, (draft) => {
+      draft.retireAge += 2;
+      draft.workUntilAge = Math.max(draft.workUntilAge, draft.retireAge + 2);
+    })),
+    optionWorkIncome: formatEffect(estimateReduction(state, (draft) => {
+      draft.workUntilAge += 3;
+      draft.workIncome += 60;
+    })),
+    optionPersonalSaving: formatEffect(estimateReduction(state, (draft) => {
+      draft.monthlySaving += 10;
+    })),
+    optionCorporateReserve: formatEffect(estimateReduction(state, (draft) => {
+      draft.corporateAnnualReserve += 120;
+    })),
+    optionInsuranceReserve: formatEffect(estimateReduction(state, (draft) => {
+      draft.insuranceCashAtRetire += 1000;
+    }))
+  };
+}
+
+function estimatePensionRisk(state, baseGap) {
+  const pensionAdjusted = normalize({
+    ...state,
+    pensionSelf: state.pensionSelf * 0.75,
+    pensionSpouse: state.pensionSpouse * 0.75
+  });
+  const stressedGap = getOverallShortage(calculate(pensionAdjusted));
+  const stressImpact = Math.max(0, stressedGap - baseGap);
+  const unverifiedFactor = (!state.pensionSelfChecked || (state.hasSpouse && !state.pensionSpouseChecked)) ? 1.25 : 0.55;
+  return stressImpact * unverifiedFactor;
+}
+
+function estimateReduction(state, mutate) {
+  const base = calculate(normalize({ ...state }));
+  const draft = { ...state };
+  mutate(draft);
+  const adjusted = calculate(normalize(draft));
+  return Math.max(0, getOverallShortage(base) - getOverallShortage(adjusted));
+}
+
+function getOverallShortage(result) {
+  return Math.max(0, result.retirementDesignGap) + Math.max(0, result.sourceGapForRequired);
+}
+
+function reduceSpending(draft, ratio) {
+  draft.monthlyLife *= ratio;
+  draft.monthlyHousing *= ratio;
+  draft.annualMedical *= ratio;
+  draft.annualDream *= ratio;
+  draft.careMonthly *= ratio;
+  draft.careOneTime *= ratio;
+}
+
+function formatEffect(value) {
+  return value > 0 ? `不足額を概算で ${yen(value)} 圧縮` : "不足額への直接影響は小さい";
 }
 
 function renderBasis(result) {
@@ -579,6 +743,79 @@ function appendCheckItem(list, className, text) {
   li.className = className;
   li.textContent = text;
   list.appendChild(li);
+}
+
+function generateIssueSummary() {
+  const summary = buildIssueSummary();
+  document.getElementById("summaryOutput").value = formatIssueSummaryText(summary);
+}
+
+function downloadSummaryJson() {
+  const summary = buildIssueSummary();
+  const blob = new Blob([JSON.stringify(summary, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "second-life-issue-summary.json";
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+function buildIssueSummary() {
+  const state = normalize(readState());
+  const result = calculate(state);
+  const diagnosis = diagnoseShortageCause(result);
+  const selectedOptions = optionDefinitions.filter((option) => state[option.key]).map((option) => option.title);
+  const unchecked = getUncheckedProposalChecks(state);
+
+  return {
+    title: "論点整理サマリー",
+    status: getAccuracyStatus(state).label,
+    hasUncheckedItems: unchecked.length > 0,
+    vision: state.vision || "未入力",
+    result: {
+      requiredCapital: yen(result.requiredCapital),
+      personalAtRetire: yen(result.personalAtRetire),
+      requiredRetirementPay: yen(result.requiredGrossRetirementPay),
+      annualPreparation: `${yen(result.annualAdditionalPreparation)}/年`
+    },
+    shortageCause: diagnosis.title,
+    consideredOptions: selectedOptions.length ? selectedOptions : ["未選択"],
+    selectedDirection: state.selectedDirection || "未入力",
+    uncheckedItems: unchecked.map((item) => item.label),
+    homework: unchecked.map((item) => item.homework)
+  };
+}
+
+function formatIssueSummaryText(summary) {
+  return [
+    "【論点整理サマリー】",
+    `精度ステータス: ${summary.status}${summary.hasUncheckedItems ? "（未確認事項あり）" : ""}`,
+    "",
+    "■ 今回確認したありたい老後",
+    summary.vision,
+    "",
+    "■ 試算結果",
+    `必要資金: ${summary.result.requiredCapital}`,
+    `個人資産見込: ${summary.result.personalAtRetire}`,
+    `必要退職金: ${summary.result.requiredRetirementPay}`,
+    `追加準備: ${summary.result.annualPreparation}`,
+    "",
+    "■ 不足の主因",
+    summary.shortageCause,
+    "",
+    "■ 検討した打ち手の選択肢",
+    summary.consideredOptions.map((item) => `・${item}`).join("\n"),
+    "",
+    "■ 経営者が選んだ方向性",
+    summary.selectedDirection,
+    "",
+    "■ 未確認事項",
+    summary.uncheckedItems.length ? summary.uncheckedItems.map((item) => `・${item}`).join("\n") : "なし",
+    "",
+    "■ 次回までの宿題",
+    summary.homework.length ? summary.homework.map((item) => `・${item}`).join("\n") : "なし"
+  ].join("\n");
 }
 
 function renderScenarios(state) {

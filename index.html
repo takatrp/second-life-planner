@@ -371,11 +371,12 @@
           </div>
         </div>
         <ul class="source-list">
-          <li>老後生活費: 生命保険文化センター「生活保障に関する調査」2025年度。最低日常生活費23.9万円/月、ゆとりある生活費39.1万円/月。</li>
-          <li>公的年金: 日本年金機構 令和8年度年金額。老齢基礎年金満額70,608円/月、厚生年金の標準的な夫婦2人分237,279円/月。</li>
-          <li>平均余命: 厚生労働省 令和6年簡易生命表。65歳時の平均余命を老後期間の目安に利用。</li>
-          <li>介護費用: 生命保険文化センター調査の平均月額8.3万円、平均期間約5年、一時費用約74万円を初期値に分解。</li>
-          <li>退職金税務: 国税庁タックスアンサー。退職所得控除、2分の1課税、短期・特定役員退職手当等の取扱いは個別確認。</li>
+          <li>老後生活費: <a href="https://www.jili.or.jp/research/chousa/10350.html" target="_blank" rel="noopener">生命保険文化センター「生活保障に関する調査」2025年度</a>。最低日常生活費23.9万円/月、ゆとりある生活費39.1万円/月。</li>
+          <li>公的年金: <a href="https://www.nenkin.go.jp/oshirase/taisetu/kojin/2026/202604/0401.html" target="_blank" rel="noopener">日本年金機構 令和8年度年金額</a>。老齢基礎年金満額70,608円/月、厚生年金の標準的な夫婦2人分237,279円/月。</li>
+          <li>平均余命: <a href="https://www.mhlw.go.jp/toukei/saikin/hw/life/life24/index.html" target="_blank" rel="noopener">厚生労働省 令和6年簡易生命表</a>。65歳時の平均余命を老後期間の目安に利用。</li>
+          <li>介護費用: <a href="https://www.jili.or.jp/press/2025/10212.html" target="_blank" rel="noopener">生命保険文化センター調査 2025年度速報版</a>の公表値を初期値に分解。</li>
+          <li>退職金税務: <a href="https://www.nta.go.jp/taxes/shiraberu/taxanswer/shotoku/1420.htm" target="_blank" rel="noopener">国税庁タックスアンサー No.1420 退職金を受け取ったとき</a>。退職所得控除等は個別確認。</li>
+          <li>リンク先は公開時点の最新版です。リンク切れや改定があるため、定期確認の運用を前提にしてください。</li>
         </ul>
       </section>
     </section>
@@ -389,6 +390,11 @@
           </div>
           <span class="status-pill" id="statusPill">試算中</span>
         </div>
+        <div class="precision-status draft" id="precisionStatus">
+          <strong>仮置き試算</strong>
+          <span>主要な確認項目が未確認です。この状態の数字は提案には使えません。</span>
+        </div>
+        <p class="initial-warning" id="initialValueWarning" hidden>初期値のまま試算しています。実数値で上書きしてください。</p>
         <div class="kpi-grid">
           <article>
             <span>必要資金</span>
@@ -413,15 +419,89 @@
         </div>
       </section>
 
-      <section class="action-panel action-panel--priority">
+      <section class="action-panel choice-panel">
         <div class="chart-title">
           <div>
-            <span class="priority-label">最重要</span>
-            <h2>今から作る体制</h2>
+            <h2>不足の主因</h2>
           </div>
-          <p>このツールの結論。個人・法人・保険を同じゴールに接続します。</p>
+          <p>診断結果のみを表示します。打ち手の推奨は行いません。</p>
         </div>
-        <ul id="actionList"></ul>
+        <div class="cause-box">
+          <strong id="shortageCauseTitle">診断中</strong>
+          <p id="shortageCauseText">入力値から不足の主因を判定します。</p>
+        </div>
+        <div class="choice-title">
+          <h3>埋め方の選択肢</h3>
+          <p>同じ粒度で並べています。検討したものだけチェックしてください。</p>
+        </div>
+        <div class="option-grid">
+          <article class="option-card">
+            <label><input type="checkbox" data-field="optionSpendReview"><span>支出水準の見直し</span></label>
+            <p id="optionSpendReviewContent"></p>
+            <dl><dt>想定される効果</dt><dd id="optionSpendReviewEffect"></dd><dt>構造的特徴</dt><dd id="optionSpendReviewFeature"></dd><dt>制約・留意点</dt><dd id="optionSpendReviewCaution"></dd></dl>
+          </article>
+          <article class="option-card">
+            <label><input type="checkbox" data-field="optionRetireLater"><span>引退時期の延長</span></label>
+            <p id="optionRetireLaterContent"></p>
+            <dl><dt>想定される効果</dt><dd id="optionRetireLaterEffect"></dd><dt>構造的特徴</dt><dd id="optionRetireLaterFeature"></dd><dt>制約・留意点</dt><dd id="optionRetireLaterCaution"></dd></dl>
+          </article>
+          <article class="option-card">
+            <label><input type="checkbox" data-field="optionWorkIncome"><span>引退後収入の継続</span></label>
+            <p id="optionWorkIncomeContent"></p>
+            <dl><dt>想定される効果</dt><dd id="optionWorkIncomeEffect"></dd><dt>構造的特徴</dt><dd id="optionWorkIncomeFeature"></dd><dt>制約・留意点</dt><dd id="optionWorkIncomeCaution"></dd></dl>
+          </article>
+          <article class="option-card">
+            <label><input type="checkbox" data-field="optionPersonalSaving"><span>個人積立の増額</span></label>
+            <p id="optionPersonalSavingContent"></p>
+            <dl><dt>想定される効果</dt><dd id="optionPersonalSavingEffect"></dd><dt>構造的特徴</dt><dd id="optionPersonalSavingFeature"></dd><dt>制約・留意点</dt><dd id="optionPersonalSavingCaution"></dd></dl>
+          </article>
+          <article class="option-card">
+            <label><input type="checkbox" data-field="optionCorporateReserve"><span>法人内部留保の積み増し</span></label>
+            <p id="optionCorporateReserveContent"></p>
+            <dl><dt>想定される効果</dt><dd id="optionCorporateReserveEffect"></dd><dt>構造的特徴</dt><dd id="optionCorporateReserveFeature"></dd><dt>制約・留意点</dt><dd id="optionCorporateReserveCaution"></dd></dl>
+          </article>
+          <article class="option-card">
+            <label><input type="checkbox" data-field="optionInsuranceReserve"><span>法人保険等による退職金原資の準備</span></label>
+            <p id="optionInsuranceReserveContent"></p>
+            <dl><dt>想定される効果</dt><dd id="optionInsuranceReserveEffect"></dd><dt>構造的特徴</dt><dd id="optionInsuranceReserveFeature"></dd><dt>制約・留意点</dt><dd id="optionInsuranceReserveCaution"></dd></dl>
+          </article>
+        </div>
+      </section>
+
+      <section class="checklist-panel">
+        <div class="chart-title">
+          <div>
+            <h2>提案前チェックリスト</h2>
+            <p id="uncheckedCheckCount">未確認 7件</p>
+          </div>
+        </div>
+        <div class="proposal-checks">
+          <label><input type="checkbox" data-field="checkNenkinSelf">ねんきん定期便を確認したか</label>
+          <label><input type="checkbox" data-field="checkNenkinSpouse">配偶者の年金加入歴を確認したか</label>
+          <label><input type="checkbox" data-field="checkRetirementRule">役員退職給与規程を確認したか</label>
+          <label><input type="checkbox" data-field="checkMeritLimit">功績倍率法の目安と予定退職金の整合を確認したか</label>
+          <label><input type="checkbox" data-field="checkGuaranteeDebt">法人借入の経営者保証残を確認したか</label>
+          <label><input type="checkbox" data-field="checkGuaranteeRelease">保証解除の見込みを確認したか</label>
+          <label><input type="checkbox" data-field="checkInsuranceCash">法人保険・積立商品の解約返戻金見込みを確認したか</label>
+        </div>
+      </section>
+
+      <section class="summary-output-panel">
+        <div class="chart-title">
+          <div>
+            <h2>論点整理サマリー</h2>
+            <p>面談記録として保存・共有するための出力です。</p>
+          </div>
+        </div>
+        <label class="textarea-field">
+          <span>経営者が選んだ方向性</span>
+          <textarea data-field="selectedDirection" rows="3" placeholder="例: 支出水準は維持し、個人積立と法人内部留保を増やす方向で次回確認。"></textarea>
+        </label>
+        <div class="summary-actions">
+          <button type="button" class="ghost-button" id="generateSummaryButton">テキスト生成</button>
+          <button type="button" class="ghost-button" id="downloadSummaryJsonButton">JSON出力</button>
+        </div>
+        <textarea id="summaryOutput" class="summary-output" rows="12" readonly></textarea>
       </section>
 
       <section class="basis-panel">
@@ -475,7 +555,7 @@
     <a href="https://www.matsumoto-kaikei.or.jp/" target="_blank" rel="noopener license">税理士法人松本会計事務所</a> ｜
     <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="license noopener">CC BY-NC-SA 4.0</a> ｜
     <a href="/tool-portal/terms.html" target="_blank" rel="noopener">利用条件</a> ｜
-    <span id="build-rev">Rev.3</span>（<span id="last-updated-date"></span>）
+    <span id="build-rev">Rev.4</span>（<span id="last-updated-date"></span>）
   </footer>
 
   <dialog id="calcDialog" class="calc-dialog">
