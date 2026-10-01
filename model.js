@@ -27,7 +27,7 @@
     }
   };
   const EVIDENCE_LABELS = {
-    monthlyLife:'基本生活費',monthlyHousing:'住居費',annualMedical:'医療・健康維持費',
+    monthlyExpenseTotal:'老後の月額支出合計',monthlyLife:'基本生活費',monthlyHousing:'住居費',annualMedical:'医療・健康維持費',
     annualDream:'趣味・旅行費',oneTimeEvent:'退職時イベント費',familySupport:'家族支援費',
     debtAtRetire:'退職時の借入残',personalAssetsNow:'個人金融資産',
     monthlySaving:'個人の積立',preRetireReturn:'現役中の運用利回り',
@@ -46,11 +46,12 @@
   };
   const FIELD_LABELS={...EVIDENCE_LABELS,currentAge:'現在年齢',retireAge:'引退予定年齢',
     lifeAge:'計画終了年齢',pensionStartAge:'本人の公的年金開始年齢',spouseAge:'配偶者年齢',
+    annuityYears:'年金保険の期間',expenseMode:'支出の入力方法',
     pensionSelfBasis:'本人年金の金額区分',pensionSpouseBasis:'配偶者年金の金額区分'};
 
   const numberKeys = [
     'currentAge','retireAge','lifeAge','pensionStartAge','spouseAge','spousePensionStartAge',
-    'monthlyLife','monthlyHousing','annualMedical','annualDream','oneTimeEvent','familySupport',
+    'monthlyExpenseTotal','monthlyLife','monthlyHousing','annualMedical','annualDream','oneTimeEvent','familySupport',
     'careMonthly','careMonths','careOneTime','careStartAge','debtAtRetire','pensionSelf',
     'pensionSpouse','annuityAnnual','annuityYears','workIncome','workUntilAge','otherIncome',
     'retirementReturn','inflationRate','personalAssetsNow','monthlySaving','preRetireReturn',
@@ -60,9 +61,13 @@
   const nonnegativeKeys = numberKeys.filter(k => !['retirementReturn','inflationRate','preRetireReturn',
     'currentAge','retireAge','lifeAge','pensionStartAge','spouseAge','spousePensionStartAge',
     'careStartAge','workUntilAge'].includes(k));
+  const breakdownExpenseKeys = ['monthlyLife','monthlyHousing','annualMedical','annualDream'];
+  const hasOwn = (object,key) => Object.prototype.hasOwnProperty.call(object,key);
+  const isRecord = value => value !== null && typeof value === 'object' && !Array.isArray(value);
   const evidenceDependencies = {
-    monthlyLife:['monthlyLife','priceBasis'],monthlyHousing:['monthlyHousing','priceBasis'],
-    annualMedical:['annualMedical','priceBasis'],annualDream:['annualDream','priceBasis'],
+    monthlyExpenseTotal:['expenseMode','priceBasis','monthlyExpenseTotal'],
+    monthlyLife:['expenseMode','priceBasis','monthlyLife'],monthlyHousing:['expenseMode','priceBasis','monthlyHousing'],
+    annualMedical:['expenseMode','priceBasis','annualMedical'],annualDream:['expenseMode','priceBasis','annualDream'],
     oneTimeEvent:['oneTimeEvent','priceBasis'],familySupport:['familySupport','priceBasis'],
     careMonthly:['careMonthly','priceBasis'],careOneTime:['careOneTime','priceBasis'],
     pensionSelf:['pensionSelf','pensionStartAge','pensionSelfBasis'],
@@ -74,12 +79,41 @@
     earlyPensionSpouse:['pensionSpouse','spousePensionStartAge','pensionSpouseBasis','pensionSpouseNetRatio','spouseAge']
   };
 
+  // Compatibility is explicit: plans that predate expenseMode use their original
+  // breakdown. A total is derived only from complete values, never default money.
+  function normalizeExpenseState(input) {
+    const state = {...input};
+    for (const key of [...numberKeys,'confirmedPayable'])
+      if (Object.is(state[key],-0)) state[key]=0;
+    if (!hasOwn(state,'expenseMode')) state.expenseMode='breakdown';
+    if (!hasOwn(state,'monthlyExpenseTotal') && state.expenseMode==='breakdown' &&
+        breakdownExpenseKeys.every(key=>typeof state[key]==='number' && Number.isFinite(state[key])))
+      state.monthlyExpenseTotal=decimalLinearSum([[state.monthlyLife,12],[state.monthlyHousing,12],
+        [state.annualMedical,1],[state.annualDream,1]])/12;
+    return state;
+  }
+  function activeExpenseKeys(state) {
+    return state.expenseMode==='total' ? ['monthlyExpenseTotal'] : breakdownExpenseKeys;
+  }
+  function evidenceErrors(evidence) {
+    if (!isRecord(evidence)) return ['根拠データの形式が正しくありません'];
+    const errors=[];
+    for (const [key,item] of Object.entries(evidence)) {
+      if (!hasOwn(EVIDENCE_LABELS,key)) continue; // Preserve unrelated metadata.
+      if (!isRecord(item) || hasOwn(item,'status') && !['missing','assumed','verified'].includes(item.status) ||
+          ['source','date','note','verifiedValue'].some(part=>hasOwn(item,part) && typeof item[part]!=='string'))
+        errors.push(`${EVIDENCE_LABELS[key]}の根拠データの形式が正しくありません`);
+    }
+    return errors;
+  }
   function validate(input) {
+    if (!isRecord(input)) return ['計画の入力値がありません'];
+    input=normalizeExpenseState(input);
     const errors = [];
     if (input.legacySummaryOnly) errors.push('旧サマリーに計画の入力値がないため、数値試算はできません');
     for (const key of numberKeys) {
       if (input[key] === '' || input[key] === null || input[key] === undefined ||
-          !Number.isFinite(Number(input[key]))) errors.push(`${FIELD_LABELS[key]}を入力してください`);
+          typeof input[key]!=='number' || !Number.isFinite(input[key])) errors.push(`${FIELD_LABELS[key]}を入力してください`);
       else if (nonnegativeKeys.includes(key) && Number(input[key]) < 0) errors.push(`${FIELD_LABELS[key]}は0以上にしてください`);
     }
     if (input.currentAge > input.retireAge || input.retireAge >= input.lifeAge)
@@ -95,6 +129,7 @@
       errors.push('退職金手取り率は0％超100％以下にしてください');
     for (const key of ['pensionSelfNetRatio','pensionSpouseNetRatio'])
       if (Number(input[key]) <= 0 || Number(input[key]) > 100) errors.push(`${FIELD_LABELS[key]}は0％超100％以下にしてください`);
+    if (!['total','breakdown'].includes(input.expenseMode)) errors.push('支出の入力方法を選んでください');
     if (!['current','retirement'].includes(input.priceBasis)) errors.push('金額の価格基準を選んでください');
     if (!['self','spouse'].includes(input.careSubject)) errors.push('介護対象者を選んでください');
     if (input.careSubject==='spouse' && !Number(input.hasSpouse) &&
@@ -102,17 +137,24 @@
       errors.push('配偶者がいない場合は配偶者の介護費を計上できません');
     for (const key of ['pensionSelfBasis','pensionSpouseBasis'])
       if (!['net','gross'].includes(input[key])) errors.push(`${FIELD_LABELS[key]}を選んでください`);
-    if (Number(input.careMonths) % 1 !== 0) errors.push('介護期間は整数の月数で入力してください');
+    if (Number.isFinite(input.annuityYears) && !Number.isInteger(input.annuityYears))
+      errors.push('年金保険の期間は整数の年数で入力してください');
+    if (Number.isFinite(input.careMonths) && !Number.isInteger(input.careMonths))
+      errors.push('介護期間は整数の月数で入力してください');
     if (Number(input.careMonths)>1200) errors.push('介護期間は1200か月以下にしてください');
     for (const key of ['preRetireReturn','retirementReturn','inflationRate'])
       if (Number(input[key])>100) errors.push(`${FIELD_LABELS[key]}は100％以下にしてください`);
     for (const key of nonnegativeKeys)
       if (Number(input[key])>1e9) errors.push(`${FIELD_LABELS[key]}が計算可能な範囲を超えています`);
     if (input.confirmedPayable !== null && input.confirmedPayable !== '' && input.confirmedPayable !== undefined &&
-        (!Number.isFinite(Number(input.confirmedPayable)) || Number(input.confirmedPayable) < 0))
+        (typeof input.confirmedPayable!=='number' || !Number.isFinite(input.confirmedPayable) || input.confirmedPayable < 0))
       errors.push('確認済み支払可能額は0以上の金額か未入力にしてください');
     if (Number(input.confirmedPayable)>1e9) errors.push('確認済み支払可能額が計算可能な範囲を超えています');
     if (![0,1,false,true].includes(input.hasSpouse)) errors.push('配偶者の有無を選んでください');
+    if (hasOwn(input,'pensionSelfYears') && (!Number.isInteger(input.pensionSelfYears) ||
+        input.pensionSelfYears < 0 || input.pensionSelfYears > 120))
+      errors.push('本人年金の受給期間は0～120の整数にしてください');
+    if (hasOwn(input,'evidence')) errors.push(...evidenceErrors(input.evidence));
     return errors;
   }
 
@@ -128,6 +170,7 @@
     return target / (Math.abs(rate) < 1e-12 ? years : (factor - 1) / rate);
   }
   function evidenceValue(state,key) {
+    state=normalizeExpenseState(state);
     return JSON.stringify((evidenceDependencies[key] || [key]).map(name=>state[name]));
   }
   function verified(state, key) {
@@ -136,35 +179,99 @@
       typeof item.date==='string' && Boolean(item.date) &&
       item.verifiedValue === evidenceValue(state,key);
   }
+  // This bounds only IEEE-754 arithmetic residue. Its scale comes from the
+  // actual operands, with no fixed money tolerance (even tiny real needs remain).
+  function roundoffAllowance(...values) {
+    return values.reduce((sum,value)=>sum+Math.abs(value)*Number.EPSILON*4,0);
+  }
+  function capitalThreshold(flows,rate,oneTime) {
+    if (rate===0) {
+      // Neumaier summation retains small, real add-ons next to large balances.
+      let sum=oneTime,correction=0,required=oneTime;
+      const add=value=>{
+        const next=sum+value;
+        correction+=Math.abs(sum)>=Math.abs(value) ? (sum-next)+value : (value-next)+sum;
+        sum=next;
+      };
+      for (const flow of flows) {
+        add(flow.spending); add(-flow.income);
+        required=Math.max(required,sum+correction);
+      }
+      return required;
+    }
+    let required=0;
+    for (let index=flows.length-1;index>=0;index--)
+      required=Math.max(0,(flows[index].spending-flows[index].income)+required/(1+rate));
+    return oneTime+required;
+  }
+  function decimalLinearSum(terms) {
+    // Sum the original base-10 numeric operands exactly, then convert once to
+    // Number. Integer multipliers never trim input or saved decimal precision.
+    const parts=terms.map(([value,multiplier])=>{
+      const [mantissa,exponent='0']=String(value).split('e');
+      const [whole,fraction='']=mantissa.split('.');
+      return {coefficient:BigInt(whole+fraction)*BigInt(multiplier),exponent:Number(exponent)-fraction.length};
+    });
+    const exponent=Math.min(...parts.map(part=>part.exponent));
+    const coefficient=parts.reduce((sum,part)=>sum+part.coefficient*10n**BigInt(part.exponent-exponent),0n);
+    return Number(`${coefficient}e${exponent}`);
+  }
+  function cleanRoundoff(value, allowance) {
+    return value === 0 || Number.isFinite(value) && Math.abs(value) <= allowance ? 0 : value;
+  }
   function simulate(flows, capital, rate, oneTime = 0) {
-    let balance = capital - oneTime;
+    // Cleanup is permitted only for a genuinely sufficient capital amount.
+    // A deficient plan must retain its real shortfall and shortage year.
+    const mayClean=capital>=capitalThreshold(flows,rate,oneTime);
+    let allowance = roundoffAllowance(capital,oneTime);
+    let balance = cleanRoundoff(capital - oneTime,mayClean ? allowance:0);
     return flows.map(flow => {
       const beginningBalance = balance;
-      const afterCashflow = beginningBalance + flow.income - flow.spending;
-      const investmentGain = afterCashflow * rate;
-      balance = afterCashflow + investmentGain;
+      const afterAllowance = allowance + roundoffAllowance(beginningBalance,flow.income,flow.spending);
+      const afterCashflow = cleanRoundoff(beginningBalance + flow.income - flow.spending,mayClean ? afterAllowance:0);
+      const investmentGain = cleanRoundoff(afterCashflow * rate,0);
+      // Multiplication avoids catastrophic cancellation near a -100% return.
+      const nextBalance = afterCashflow * (1+rate);
+      allowance = afterAllowance * Math.abs(1+rate) + roundoffAllowance(nextBalance);
+      balance = cleanRoundoff(nextBalance,mayClean ? allowance:0);
       return {age: flow.age, beginningBalance, income: flow.income, spending: flow.spending,
         afterCashflow, investmentGain, endBalance: balance, balance};
     });
   }
   function sufficient(flows, capital, rate, oneTime) {
-    if (capital + TOLERANCE < oneTime) return false;
+    if (capital < oneTime) return false;
     return simulate(flows, capital, rate, oneTime).every(x =>
-      x.afterCashflow >= -TOLERANCE && x.endBalance >= -TOLERANCE);
+      Number.isFinite(x.afterCashflow) && Number.isFinite(x.endBalance) &&
+      x.afterCashflow >= 0 && x.endBalance >= 0);
   }
   function minimumCapital(flows, rate, oneTime) {
+    const threshold=capitalThreshold(flows,rate,oneTime);
+    if (!Number.isFinite(threshold)) throw new RangeError('必要資金を計算できません');
+    // Zero is a real branch, not a tiny positive bisection remainder.
+    if (threshold===0 && sufficient(flows,0,rate,oneTime)) return 0;
     let low = 0;
-    let high = Math.max(1, oneTime);
+    let high = Math.max(1,oneTime,threshold);
     let count = 0;
     while (!sufficient(flows, high, rate, oneTime)) {
       high *= 2;
       if (!Number.isFinite(high) || ++count > 1024) throw new RangeError('必要資金を計算できません');
     }
-    for (let i = 0; i < 100 && high - low > TOLERANCE; i++) {
-      const mid = (low + high) / 2;
+    // Search to adjacent representable numbers, independently of the reporting
+    // tolerance. The larger cap also covers positive subnormal requirements.
+    for (let i = 0; i < 1075; i++) {
+      const mid = low + (high-low)/2;
+      if (mid===low || mid===high) break;
       if (sufficient(flows, mid, rate, oneTime)) high = mid;
       else low = mid;
     }
+    // Repeated subtraction can leave an exact integer boundary a few ULPs away.
+    // Only snap a nonzero integer within an operation-scaled roundoff bound and
+    // only after checking that this candidate is sufficient. No input is rounded.
+    high=Math.max(high,threshold);
+    const integer = Math.round(high);
+    const boundaryAllowance = Math.abs(high)*Number.EPSILON*2;
+    if (integer > 0 && integer>=threshold && Math.abs(high-integer)<=boundaryAllowance && sufficient(flows,integer,rate,oneTime))
+      return integer;
     return high;
   }
   function assess(result) {
@@ -177,7 +284,7 @@
     if (result.careOutside > TOLERANCE) reasons.push(`計画期間外の介護費用${Math.ceil(result.careOutside)}万円は試算に含めていません`);
     const s = result.state;
     if (s.migrationWarning && !s.migrationReviewed) reasons.push(s.migrationWarning);
-    const important = ['monthlyLife','monthlyHousing','annualMedical','annualDream','oneTimeEvent',
+    const important = [...activeExpenseKeys(s),'oneTimeEvent',
       'familySupport','debtAtRetire','careMonthly','careOneTime','personalAssetsNow',
       'retirementReturn','inflationRate'];
     if (s.personalAssetsNow>0 || s.monthlySaving>0 || s.plannedRetirementPay>0)
@@ -205,6 +312,7 @@
     return {key: shortage ? 'shortage' : reasons.length ? 'assumed' : 'adequate', reasons};
   }
   function calculate(input) {
+    if (input && typeof input==='object' && !Array.isArray(input)) input=normalizeExpenseState(input);
     const errors = validate(input);
     if (errors.length) return {state:input, errors, assessment:{key:'error',reasons:errors}, cashflows:[]};
     const s = {...input, hasSpouse:Number(input.hasSpouse)===1 || input.hasSpouse===true,
@@ -232,7 +340,8 @@
         else careOutside+=amount;
       }
     }
-    const annualBasicSpend=(s.monthlyLife+s.monthlyHousing)*12+s.annualMedical+s.annualDream;
+    const annualBasicSpend=s.expenseMode==='total' ? decimalLinearSum([[s.monthlyExpenseTotal,12]]) :
+      decimalLinearSum([[s.monthlyLife,12],[s.monthlyHousing,12],[s.annualMedical,1],[s.annualDream,1]]);
     const oneTimeAtRetire=(s.oneTimeEvent+s.familySupport+s.debtAtRetire) * priceFactor(s.retireAge);
     const cashflows=[];
     for (let age=s.retireAge; age<s.lifeAge; age++) {
@@ -299,16 +408,49 @@
       reasons:r.assessment.reasons};
     return {summary:common,chart:common,comparison:common,print:common,export:common};
   }
+  function sameJsonValue(left,right) {
+    if (left===right) return true;
+    if (!left || !right || typeof left!=='object' || typeof right!=='object' ||
+        Array.isArray(left)!==Array.isArray(right)) return false;
+    const keys=Object.keys(left),otherKeys=Object.keys(right);
+    return keys.length===otherKeys.length && keys.every(key=>hasOwn(right,key) && sameJsonValue(left[key],right[key]));
+  }
+  function validateSavedState(state) {
+    // Old v2 breakdown plans predate the two expense-mode fields. All other
+    // model fields must exist before the UI may merge or mutate a current plan.
+    const compatibleBreakdown = !hasOwn(state,'expenseMode') || state.expenseMode==='breakdown';
+    for (const key of numberKeys) {
+      if (key==='monthlyExpenseTotal' && compatibleBreakdown && !hasOwn(state,key)) continue;
+      if (!hasOwn(state,key)) throw new Error(`${FIELD_LABELS[key]}が保存データにありません`);
+    }
+    for (const key of ['hasSpouse','careSubject','priceBasis','pensionSelfBasis','pensionSpouseBasis','confirmedPayable','evidence'])
+      if (!hasOwn(state,key)) throw new Error(`${FIELD_LABELS[key] || key}が保存データにありません`);
+    if (!isRecord(state.evidence)) throw new Error('根拠データの形式が正しくありません');
+    // Summary-only is a calculation stop flag, never a schema-validation bypass.
+    const errors=validate({...state,legacySummaryOnly:false});
+    if (errors.length) throw new Error(errors.join('、'));
+  }
+  function exactLegacyMigration(data) {
+    if (typeof data.legacyOriginal!=='string') return false;
+    try {
+      const original=JSON.parse(data.legacyOriginal);
+      if (!isRecord(original) || hasOwn(original,'version') && original.version!==1) return false;
+      return sameJsonValue(data,migrateLegacy(original,data.legacyOriginal));
+    } catch { return false; }
+  }
   function migrate(raw) {
     const data=JSON.parse(raw);
-    if (!data || typeof data!=='object' || Array.isArray(data)) throw new Error('保存形式が正しくありません');
+    if (!isRecord(data)) throw new Error('保存形式が正しくありません');
     if (data.version===VERSION) {
-      if (!data.state || typeof data.state!=='object' || Array.isArray(data.state)) throw new Error('状態データがありません');
-      if (!data.legacyOriginal)
-        for (const key of ['currentAge','retireAge','lifeAge','monthlyLife','priceBasis'])
-          if (!(key in data.state)) throw new Error(`${FIELD_LABELS[key]}が保存データにありません`);
+      if (!isRecord(data.state)) throw new Error('状態データがありません');
+      // Partial historical migrations are supported only if their entire envelope
+      // exactly matches a fresh migration of the preserved, original legacy JSON.
+      if (!exactLegacyMigration(data)) validateSavedState(data.state);
       return data;
     }
+    return migrateLegacy(data,raw);
+  }
+  function migrateLegacy(data,raw) {
     if ('version' in data && data.version!==1) throw new Error('未対応の保存形式です');
     const summaryOnly=data.title==='論点整理サマリー' && !data.state;
     if (summaryOnly) return {version:VERSION,
@@ -317,7 +459,7 @@
         migrationReviewed:false,legacySummaryOnly:true,evidence:{}},
       sources:{},legacyOriginal:raw,legacySummary:data};
     const old=data.state && data.version===1 ? data.state:data;
-    if (!old || typeof old!=='object' || Array.isArray(old)) throw new Error('旧計画の形式が正しくありません');
+    if (!isRecord(old)) throw new Error('旧計画の形式が正しくありません');
     if (!['currentAge','retireAge','monthlyLife'].some(key=>key in old))
       throw new Error('旧計画の入力値が見つかりません');
     const state={...old,spousePensionStartAge:65,careStartAge:78,
@@ -334,7 +476,7 @@
     return {version:VERSION,state,sources:{care:{title:'旧入力値の出典未確認',year:'不明',unit:'万円/月・万円/回',
       checkedAt:'',reference:{...SOURCES.care}}},legacyOriginal:raw};
   }
-  const api={VERSION,SOURCES,EVIDENCE_LABELS,TOLERANCE,validate,calculate,simulate,compare,report,migrate,verified,evidenceValue};
+  const api={VERSION,SOURCES,EVIDENCE_LABELS,TOLERANCE,validate,calculate,simulate,compare,report,migrate,verified,evidenceValue,normalizeExpenseState,activeExpenseKeys};
   if (typeof module!=='undefined' && module.exports) module.exports=api;
   root.PlannerModel=api;
 })(typeof globalThis!=='undefined'?globalThis:this);

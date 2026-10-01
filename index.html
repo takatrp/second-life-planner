@@ -23,174 +23,173 @@
         <button class="ghost-button" id="exportPlanButton" type="button">計画を出力</button>
         <label class="ghost-button file-button">計画を読込<input id="importPlanInput" type="file" accept="application/json,.json" hidden></label>
         <button class="ghost-button" id="resetButton" type="button">初期化</button>
-        <button class="primary-button" id="printButton" type="button">印刷</button>
+        <button class="primary-button" id="printButton" type="button">面談用に印刷</button>
       </div>
     </div>
   </header>
 
-  <main class="app-shell">
-    <section class="input-column" aria-label="入力">
-      <section class="panel vision-panel">
-        <div class="section-title">
-          <span class="section-index">01</span>
-          <div>
-            <h2>ありたい老後</h2>
-            <p>生活水準ではなく、先に実現したい状態を置きます。</p>
-          </div>
-        </div>
-        <label class="textarea-field">
-          <span>老後はこうしたい・こうありたい</span>
-          <textarea data-field="vision" rows="4">夫婦で健康に過ごし、年に数回は旅行へ行ける状態を維持したい。会社に過度に依存せず、退職後の生活費を見える化しておきたい。</textarea>
-        </label>
-      </section>
 
-      <section class="panel">
-        <div class="section-title">
-          <span class="section-index">02</span>
-          <div>
-            <h2>期間の前提</h2>
-            <p>現役から引退、ご自身で設定する計画終了年齢までをつなげます。</p>
-          </div>
-        </div>
-        <div class="field-grid compact">
-          <label class="input-field">
+  <nav class="step-nav" aria-label="ページ内の移動"><a href="#basicInputs">01 基本入力</a><a href="#meetingResults">02 面談結果</a><a href="#detailsArea">03 詳細・根拠</a></nav>
+  <main class="app-shell">
+    <section class="input-column" id="basicInputs" aria-label="基本入力">
+      <section class="panel basic-panel">
+        <div class="section-title"><span class="section-index">01</span><div><h2>まず、基本の数字から</h2><p>金額は万円。例示値を実際の見込額に置き換えてください。保存は手動です</p></div></div>
+<div class="field-grid"><label class="input-field">
             <span>現在年齢</span>
             <input type="number" data-field="currentAge" min="20" max="90" value="50">
             <em>歳</em>
-            <small>例示値。50歳前後から15年程度で引退準備を始める相談を想定。</small>
+
           </label>
-          <label class="input-field">
+<label class="input-field">
             <span>引退予定年齢</span>
             <input type="number" data-field="retireAge" min="40" max="95" value="65">
             <em>歳</em>
-            <small>公的年金の標準的な受給開始年齢に合わせた初期値。</small>
+
           </label>
-          <label class="input-field">
+<label class="input-field">
             <span>計画終了年齢</span>
             <input type="number" data-field="lifeAge" min="60" max="110" value="88">
             <em>歳</em>
-            <small>ここで設定した年齢になるまでを試算。平均余命とは異なり、ご自身で設定する計画期間です。</small>
+
           </label>
-          <label class="input-field">
-            <span>公的年金開始</span>
-            <input type="number" data-field="pensionStartAge" min="60" max="75" value="65">
-            <em>歳</em>
-            <small>老齢年金の原則的な受給開始年齢を置いています。</small>
-          </label>
-          <label class="input-field">
+<label class="input-field">
             <span>配偶者</span>
             <select data-field="hasSpouse">
               <option value="1">あり</option>
               <option value="0">なし</option>
             </select>
-            <small>夫婦2人の老後生活費の確認を初期状態にしています。</small>
+
           </label>
-          <label class="input-field">
+<label data-spouse-field class="input-field">
             <span>配偶者年齢</span>
             <input type="number" data-field="spouseAge" min="20" max="100" value="48">
             <em>歳</em>
-            <small>本人より2歳若い例示値。年金開始や生活期間の会話用。</small>
-          </label>
-          <label class="input-field">
-            <span>金額の価格基準</span>
-            <select data-field="priceBasis"><option value="current">現在の購買力</option><option value="retirement" selected>退職時点の名目額</option></select>
-            <small>現在価格なら引退前から、退職時点価格なら引退後から支出に物価上昇を反映。収入は固定額です。</small>
-          </label>
-        </div>
-      </section>
 
-      <section class="panel">
-        <div class="section-title">
-          <span class="section-index">03</span>
-          <div>
-            <h2>老後の支出</h2>
-            <p>基本生活費と、夢・健康・家族支援を分けて置きます。</p>
-          </div>
-        </div>
-        <div class="field-grid">
-          <label class="input-field preset-field">
+          </label></div><div class="field-grid"><label class="input-field total-expense-field"><span>老後の生活費 合計</span><input type="number" data-field="monthlyExpenseTotal" min="0" step="0.1" value="67.91666666666667"><em>万円/月</em><small>住居・医療・趣味を含む合計。介護と退職時の一時支出は別枠</small></label></div><div class="field-grid"><label class="input-field ">
+                <span>現在の老後に使える個人資産</span>
+                <input type="number" data-field="personalAssetsNow" min="0" value="1500">
+                <em>万円</em>
+
+              </label>
+<label class="input-field ">
+                <span>個人の積立</span>
+                <input type="number" data-field="monthlySaving" min="0" value="20">
+                <em>万円/月</em>
+
+              </label>
+<label class="input-field ">
+            <span><span id="selfPensionLabel">本人年金（手取り見込）</span></span>
+            <input type="number" data-field="pensionSelf" min="0" value="160">
+            <em>万円/年</em>
+
+          </label>
+<label data-spouse-field class="input-field ">
+            <span><span id="spousePensionLabel">配偶者年金（手取り見込）</span></span>
+            <input type="number" data-field="pensionSpouse" min="0" value="90">
+            <em>万円/年</em>
+
+          </label>
+<label class="input-field ">
+                <span>予定退職金（額面）</span>
+                <input type="number" data-field="plannedRetirementPay" min="0" value="2500">
+                <em>万円</em>
+
+              </label>
+<label class="input-field">
+            <span>退職時の大きな一時支出</span>
+            <input type="number" data-field="oneTimeEvent" min="0" value="500">
+            <em>万円</em>
+
+          </label></div>
+        <p id="expenseModeSummary" class="mode-summary"></p>
+        <div class="assumption-strip"><strong>この試算で使う前提</strong><p id="assumptionStrip"></p><p id="incomeAssumptions"></p><p id="careAssumptions"></p><a href="#incomeDetails">年金・収入・運用を編集</a> / <a href="#expenseDetails">生活費の内訳・介護を編集</a></div>
+      </section>
+    </section>
+    <aside class="result-column" id="meetingResults" aria-label="面談結果">
+      <section class="summary-panel" id="legacySummaryPanel" hidden><h2>旧サマリーの参照</h2><p>入力値がないため数値試算を停止しています。原文は計画JSONに保持します</p><p id="legacyImportError" class="initial-warning" hidden></p><pre id="legacySummaryText" class="legacy-summary-text"></pre><button type="button" class="primary-button" id="startFromLegacyButton">新規入力で試算を始める</button></section>
+      <section class="summary-panel meeting-panel">
+        <div class="section-title"><span class="section-index">02</span><div><h2>面談で見る結果</h2><p id="periodDescription"></p></div></div>
+        <div class="summary-head"><h3 id="statusTitle">入力待ち</h3><span class="status-pill" id="statusPill">試算中</span></div>
+        <p class="initial-warning" id="inputErrors" hidden></p><p class="initial-warning" id="initialValueWarning" hidden></p>
+        <div class="meeting-kpis"><article class="runout-card"><span>資金が初めて不足する年</span><strong id="firstShortage">-</strong><small>予定退職金の受領を仮定した年次CF</small></article><article><span>引退時に追加で必要な生活資金</span><strong id="additionalCapital">-</strong><small>最初の不足年の赤字額ではなく、計画全体を埋める額</small></article></div>
+        <div class="precision-status" id="precisionStatus"><strong></strong><span></span><ul id="precisionNextSteps"></ul></div>
+        <ul id="essentialWarnings" class="essential-warnings"></ul>
+        <div id="fundingConditions" class="funding-conditions"></div>
+        <section class="outside-costs" id="outsideCostsPanel"><h3>期間外の予定介護費用</h3><p id="outsideCostsText"></p></section>
+        <div class="chart-title"><h3>引退後の残高推移</h3><p id="runoutText"></p></div>
+        <canvas id="balanceChart" width="1000" height="340" aria-label="引退後の年末残高推移。数値結果は上の初回不足と追加必要資金に表示"></canvas>
+        <section class="quick-comparison"><h3>条件を変えて比べる</h3><p>現在の入力を変えず、同じ計算器で試算。引退年齢が異なる案は元の引退時点へ換算</p><div class="quick-controls"><label>生活費を月いくらに？<input id="compareLiving" type="number" min="0" step="0.1"><span>万円/月</span></label><label>積立を月いくらに？<input id="compareSaving" type="number" min="0" step="1"><span>万円/月</span></label><label>何歳で引退？<input id="compareRetireAge" type="number" min="0" max="120" step="1"><span>歳</span></label></div><div id="quickComparisonResults" class="quick-results" aria-live="polite"></div><button class="ghost-button" type="button" id="resetComparisonButton">比較を現在の入力に戻す</button></section>
+      </section>
+      <section class="basis-panel company-readiness"><h2>法人側の退職金準備</h2><p id="companyReadiness"></p><p class="muted">世帯の生活資金不足と別の指標です。両者を合算しません</p><a href="#companyDetails">法人の確認額・準備見込を編集</a></section>
+    </aside>
+    <section class="details-area" id="detailsArea" aria-label="詳細・根拠"><div class="section-title"><span class="section-index">03</span><div><h2>必要なところだけ、詳しく</h2><p>内訳・収入・法人原資・根拠記録はここに保持しています</p></div></div>
+<details class="detail-fold" id="expenseDetails"><summary>生活費の内訳・一時費用・介護</summary><div class="detail-body"><label class="input-field"><span>生活費の計算方法</span><select data-field="expenseMode"><option value="total">合計を入力</option><option value="breakdown">内訳を合算</option></select><small id="expenseModeNote"></small></label><p class="detail-note">合計入力モードでは、下の生活費4項目を加算しません。内訳モードでは合計入力を加算しません。使わない側の値も保存されます。切替前に両方の合計を確認してください</p><div class="field-grid"><label class="input-field preset-field">
             <span>基本生活費</span>
             <input type="number" data-field="monthlyLife" min="0" value="45">
             <em>万円/月</em>
             <small>2025年度調査では夫婦2人の最低日常生活費23.9万円、ゆとりある生活費39.1万円/月。45万円は面談用仮定です。下の医療・趣味費と重複しない額に直してください。</small>
           </label>
-          <label class="input-field">
+<label class="input-field">
             <span>住居費</span>
             <input type="number" data-field="monthlyHousing" min="0" value="0">
             <em>万円/月</em>
             <small>持ち家前提の初期値。賃貸・住宅ローンが残る場合は別枠で加算。</small>
           </label>
-          <label class="input-field">
+<label class="input-field">
             <span>医療・健康維持</span>
             <input type="number" data-field="annualMedical" min="0" value="35">
             <em>万円/年</em>
             <small>夫婦の医療費・健診等の面談用仮定。基本生活費に含む場合は0にしてください。</small>
           </label>
-          <label class="input-field">
+<label class="input-field">
             <span>趣味・旅行・会食</span>
             <input type="number" data-field="annualDream" min="0" value="240">
             <em>万円/年</em>
             <small>旅行・会食等、基本生活費に含めない分だけの上乗せ仮定。重複する場合は0にしてください。</small>
           </label>
-          <label class="input-field">
-            <span>退職時イベント</span>
-            <input type="number" data-field="oneTimeEvent" min="0" value="500">
-            <em>万円</em>
-            <small>退職直後の旅行、車、住まい整備など一時支出の仮置き。</small>
-          </label>
-          <label class="input-field">
+<label class="input-field">
             <span>子・孫への支援</span>
             <input type="number" data-field="familySupport" min="0" value="300">
             <em>万円</em>
             <small>教育・結婚・住宅・節目祝い等の支援を一括予備費として仮置き。</small>
           </label>
-          <label class="input-field stat-field">
-            <span>介護月額</span>
-            <input type="number" data-field="careMonthly" min="0" step="0.1" value="9.0">
-            <em>万円/月</em>
-            <small>生命保険文化センター2024年度調査、経験世帯の平均月9.0万円。個人の必要額・上限ではありません。</small>
-          </label>
-          <label class="input-field stat-field">
-            <span>介護期間</span>
-            <input type="number" data-field="careMonths" min="0" step="1" value="55">
-            <em>か月</em>
-            <small>同調査の平均55.0か月。1か月単位で年次費用へ配分します。</small>
-          </label>
-          <label class="input-field stat-field">
-            <span>介護一時費用</span>
-            <input type="number" data-field="careOneTime" min="0" value="47.2">
-            <em>万円</em>
-            <small>同調査の一時費用平均47.2万円。開始時に一度だけ計上します。</small>
-          </label>
-          <label class="input-field"><span>介護開始年齢</span><input type="number" data-field="careStartAge" min="0" max="110" value="78"><em>歳</em><small>対象者の年齢。78歳は相談用の仮定です。</small></label>
-          <label class="input-field"><span>介護対象者</span><select data-field="careSubject"><option value="self">本人</option><option value="spouse">配偶者</option></select><small>対象者の年齢で開始時期を判定します。</small></label>
-          <label class="input-field">
+<label class="input-field">
             <span>退職時の借入残</span>
             <input type="number" data-field="debtAtRetire" min="0" value="0">
             <em>万円</em>
             <small>生活資金から返済する借入がなければ0。住宅ローン・役員貸付等があれば入力。</small>
           </label>
-        </div>
-      </section>
-
-      <section class="panel">
-        <div class="section-title">
-          <span class="section-index">04</span>
-          <div>
-            <h2>老後の収入</h2>
-            <p>公的年金、年金保険、退職後収入を分けます。</p>
-          </div>
-        </div>
-        <div class="field-grid">
-          <label class="input-field preset-field">
-            <span>本人の公的年金</span>
-            <input type="number" data-field="pensionSelf" min="0" value="160">
-            <em>万円/年</em>
-            <small>仮置き値。役員報酬を抑えた経営者は下振れしやすいため、ねんきん定期便で必ず上書き。</small>
+<label class="input-field stat-field">
+            <span>介護月額</span>
+            <input type="number" data-field="careMonthly" min="0" step="0.1" value="9.0">
+            <em>万円/月</em>
+            <small>生命保険文化センター2024年度調査、経験世帯の平均月9.0万円。個人の必要額・上限ではありません。</small>
           </label>
-          <label class="input-field"><span>本人年金の金額区分</span><select data-field="pensionSelfBasis"><option value="net">手取り見込</option><option value="gross">額面</option></select><small>額面の場合は下の手取り仮定率を適用します。</small></label>
-          <label class="input-field"><span>本人年金の手取り仮定率</span><input type="number" data-field="pensionSelfNetRatio" min="1" max="100" value="100"><em>%</em><small>額面入力時だけ使用。税・社会保険料を自動計算しません。</small></label>
-          <label class="input-field">
+<label class="input-field stat-field">
+            <span>介護期間</span>
+            <input type="number" data-field="careMonths" min="0" step="1" value="55">
+            <em>か月</em>
+            <small>同調査の平均55.0か月。1か月単位で年次費用へ配分します。</small>
+          </label>
+<label class="input-field stat-field">
+            <span>介護一時費用</span>
+            <input type="number" data-field="careOneTime" min="0" value="47.2">
+            <em>万円</em>
+            <small>同調査の一時費用平均47.2万円。開始時に一度だけ計上します。</small>
+          </label>
+<label class="input-field"><span>介護開始年齢</span><input type="number" data-field="careStartAge" min="0" max="110" value="78"><em>歳</em><small>対象者の年齢。78歳は相談用の仮定です。</small></label>
+<label class="input-field"><span>介護対象者</span><select data-field="careSubject"><option value="self">本人</option><option value="spouse">配偶者</option></select><small>対象者の年齢で開始時期を判定します。</small></label></div></div></details><details class="detail-fold" id="incomeDetails"><summary>年金・その他の収入・価格と利回り</summary><div class="detail-body"><div class="field-grid"><label class="input-field">
+            <span>公的年金開始</span>
+            <input type="number" data-field="pensionStartAge" min="60" max="75" value="65">
+            <em>歳</em>
+            <small>老齢年金の原則的な受給開始年齢を置いています。</small>
+          </label>
+<label class="input-field"><span>配偶者年金開始年齢</span><input type="number" data-field="spousePensionStartAge" min="60" max="75" value="65"><em>歳</em><small>配偶者自身の年齢で判定します。</small></label>
+<label class="input-field"><span>本人年金の金額区分</span><select data-field="pensionSelfBasis"><option value="net">手取り見込</option><option value="gross">額面</option></select><small>額面の場合は下の手取り仮定率を適用します。</small></label>
+<label class="input-field"><span>本人年金の手取り仮定率</span><input type="number" data-field="pensionSelfNetRatio" min="1" max="100" value="100"><em>%</em><small>額面入力時だけ使用。税・社会保険料を自動計算しません。</small></label>
+<label class="input-field"><span>配偶者年金の金額区分</span><select data-field="pensionSpouseBasis"><option value="net">手取り見込</option><option value="gross">額面</option></select><small>額面なら下の手取り仮定率を適用します。</small></label>
+<label class="input-field"><span>配偶者年金の手取り仮定率</span><input type="number" data-field="pensionSpouseNetRatio" min="1" max="100" value="100"><em>%</em><small>税・社会保険料を自動計算しません。</small></label>
+<label class="input-field">
             <span>本人年金の確認</span>
             <select data-field="pensionSelfChecked">
               <option value="0">未確認</option>
@@ -198,16 +197,7 @@
             </select>
             <small>この申告だけでは資料確認済みにはなりません。出所と確認日を根拠欄に記録してください。</small>
           </label>
-          <label class="input-field preset-field">
-            <span>配偶者の公的年金</span>
-            <input type="number" data-field="pensionSpouse" min="0" value="90">
-            <em>万円/年</em>
-            <small>専業主婦、役員、勤務歴で大きく変わります。加給年金・振替加算も個別確認。</small>
-          </label>
-          <label class="input-field"><span>配偶者年金開始年齢</span><input type="number" data-field="spousePensionStartAge" min="60" max="75" value="65"><em>歳</em><small>配偶者自身の年齢で判定します。</small></label>
-          <label class="input-field"><span>配偶者年金の金額区分</span><select data-field="pensionSpouseBasis"><option value="net">手取り見込</option><option value="gross">額面</option></select><small>額面なら下の手取り仮定率を適用します。</small></label>
-          <label class="input-field"><span>配偶者年金の手取り仮定率</span><input type="number" data-field="pensionSpouseNetRatio" min="1" max="100" value="100"><em>%</em><small>税・社会保険料を自動計算しません。</small></label>
-          <label class="input-field">
+<label class="input-field">
             <span>配偶者年金の確認</span>
             <select data-field="pensionSpouseChecked">
               <option value="0">未確認</option>
@@ -215,25 +205,25 @@
             </select>
             <small>配偶者ありの場合の面談メモです。出所と確認日を根拠欄に記録してください。</small>
           </label>
-          <label class="input-field">
+<label class="input-field">
             <span>年金保険など</span>
             <input type="number" data-field="annuityAnnual" min="0" value="120">
             <em>万円/年</em>
             <small>個人年金・小規模共済の分割受取等として月10万円を仮置き。</small>
           </label>
-          <label class="input-field">
+<label class="input-field">
             <span>年金保険の期間</span>
-            <input type="number" data-field="annuityYears" min="0" max="50" value="10">
+            <input type="number" data-field="annuityYears" min="0" step="1" max="50" value="10">
             <em>年</em>
             <small>10年確定年金型を想定した初期値。終身型は長めに調整。</small>
           </label>
-          <label class="input-field preset-field">
+<label class="input-field preset-field">
             <span>退職後の仕事収入</span>
             <input type="number" data-field="workIncome" min="0" value="120">
             <em>万円/年</em>
             <small>顧問料・軽い役務提供等で月10万円を想定。</small>
           </label>
-          <label class="input-field">
+<label class="input-field">
             <span>仕事収入の区分</span>
             <select data-field="workIncomeType">
               <option value="0">顧問料・事業収入等</option>
@@ -241,134 +231,90 @@
             </select>
             <small>給与・役員報酬で年金開始後も続く場合は在職老齢年金の警告を出します。</small>
           </label>
-          <label class="input-field">
+<label class="input-field">
             <span>仕事収入の終了年齢</span>
             <input type="number" data-field="workUntilAge" min="40" max="110" value="70">
             <em>歳</em>
             <small>引退後5年程度は関与収入が残る前提の例示値。</small>
           </label>
-          <label class="input-field">
+<label class="input-field">
             <span>不動産・配当等</span>
             <input type="number" data-field="otherIncome" min="0" value="60">
             <em>万円/年</em>
             <small>不動産、配当、利息等として月5万円を仮置き。</small>
           </label>
-          <label class="input-field">
+<label class="input-field">
+            <span>金額の価格基準</span>
+            <select data-field="priceBasis"><option value="current">現在の購買力</option><option value="retirement" selected>退職時点の名目額</option></select>
+            <small>現在価格なら引退前から、退職時点価格なら引退後から支出に物価上昇を反映。収入は固定額です。</small>
+          </label>
+<label class="input-field">
             <span>老後運用利回り</span>
             <input type="number" data-field="retirementReturn" step="0.1" value="1.0">
             <em>%</em>
             <small>取り崩し期は元本保全寄りとして年1%の控えめな仮置き。</small>
           </label>
-          <label class="input-field preset-field">
+<label class="input-field preset-field">
             <span>老後支出インフレ率</span>
             <input type="number" data-field="inflationRate" step="0.1" value="2.0">
             <em>%</em>
             <small>物価上昇を独立変数として反映。日銀目標2%を標準シナリオの目安にしています。</small>
           </label>
-        </div>
-      </section>
-
-      <section class="panel">
-        <div class="section-title">
-          <span class="section-index">05</span>
-          <div>
-            <h2>個人資産と法人準備</h2>
-            <p>個人で作れているほど、会社から必要な退職金は小さくなります。</p>
-          </div>
-        </div>
-        <div class="asset-groups">
-          <section class="asset-group asset-group--personal" aria-label="個人側">
-            <div class="asset-group__head">
-              <span class="owner-badge owner-badge--personal">個人</span>
-              <h3>個人で作る資産</h3>
-            </div>
-            <div class="field-grid">
-              <label class="input-field preset-field">
-                <span>現在の個人金融資産</span>
-                <input type="number" data-field="personalAssetsNow" min="0" value="1500">
-                <em>万円</em>
-                <small>預貯金・証券・NISA等の合計。例示値として1,500万円から開始。</small>
-              </label>
-              <label class="input-field preset-field">
-                <span>個人の積立</span>
-                <input type="number" data-field="monthlySaving" min="0" value="20">
-                <em>万円/月</em>
-                <small>NISA、小規模企業共済、預貯金等で月20万円を積み立てる例。</small>
-              </label>
-              <label class="input-field">
+<label class="input-field">
                 <span>現役中の運用利回り</span>
                 <input type="number" data-field="preRetireReturn" step="0.1" value="2.0">
                 <em>%</em>
                 <small>長期・分散運用の控えめな名目利回りとして年2%を仮置き。</small>
-              </label>
-            </div>
-          </section>
-
-          <section class="asset-group asset-group--corporate" aria-label="法人側">
-            <div class="asset-group__head">
-              <div class="asset-group__title">
-                <span class="owner-badge owner-badge--corporate">法人</span>
-                <h3>法人で作る退職金原資</h3>
-              </div>
-              <a class="detail-button" href="https://takatrp.github.io/taishoku/" target="_blank" rel="noopener">詳しく試算</a>
-            </div>
-            <div class="field-grid">
-              <label class="input-field preset-field">
-                <span>予定退職金</span>
-                <input type="number" data-field="plannedRetirementPay" min="0" value="2500">
-                <em>万円</em>
-                <small>ここでは仮置き。役員退職給与規程・最終報酬月額・在任年数・功績倍率は「詳しく試算」で確認。</small>
-              </label>
-              <label class="input-field">
+              </label></div></div></details><details class="detail-fold" id="companyDetails"><summary>法人の確認額・準備見込・税務参考</summary><div class="detail-body"><p class="detail-note">確認済み支払可能額は資料に基づく額面です。将来積立・保険等の予測額とは分けて確認します。功績倍率等は参考情報で、税額・損金算入は自動計算しません</p><div class="field-grid"><label class="input-field"><span>確認済み支払可能額</span><input type="number" data-field="confirmedPayable" min="0" placeholder="未入力"><em>万円</em><small>運転資金・税・返済等を控除した上で、支払いに充てられると資料で確認した額。未確認なら空欄。</small></label>
+<label class="input-field">
                 <span>退職金の手取り率</span>
                 <input type="number" data-field="retirementNetRatio" min="30" max="100" value="85">
                 <em>%</em>
                 <small>退職所得控除や2分の1課税を簡易反映する概算率。正確な手取りは「詳しく試算」で確認。</small>
               </label>
-              <label class="input-field preset-field">
-                <span>最終報酬月額</span>
-                <input type="number" data-field="finalMonthlyComp" min="0" value="120">
-                <em>万円/月</em>
-                <small>参考記録。この画面の必要資金計算には使用しません。税務上の確認は「詳しく試算」へ。</small>
-              </label>
-              <label class="input-field">
-                <span>役員在任年数</span>
-                <input type="number" data-field="officerYears" min="0" step="1" value="25">
-                <em>年</em>
-                <small>参考記録。役員在任期間の税務上の扱いは「詳しく試算」で確認してください。</small>
-              </label>
-              <label class="input-field preset-field">
-                <span>功績倍率</span>
-                <input type="number" data-field="meritMultiplier" min="0" step="0.1" value="3.0">
-                <em>倍</em>
-                <small>参考記録。この画面では功績倍率法の税務判定をしません。根拠は別途確認してください。</small>
-              </label>
-              <label class="input-field">
+<label class="input-field">
                 <span>退職金原資の既準備額</span>
                 <input type="number" data-field="corporateReserveNow" min="0" value="800">
                 <em>万円</em>
                 <small>法人内の退職金目的資金・内部留保のうち、実際に使える額だけを入力。</small>
               </label>
-              <label class="input-field"><span>確認済み支払可能額</span><input type="number" data-field="confirmedPayable" min="0" placeholder="未入力"><em>万円</em><small>運転資金・税・返済等を控除した上で、支払いに充てられると資料で確認した額。未確認なら空欄。</small></label>
-              <label class="input-field">
+<label class="input-field">
                 <span>法人の年次積立余力</span>
                 <input type="number" data-field="corporateAnnualReserve" min="0" value="120">
                 <em>万円/年</em>
                 <small>継続MAS側で資金繰り確認する年100万円台の準備例。月10万円相当。</small>
               </label>
-              <label class="input-field preset-field">
+<label class="input-field preset-field">
                 <span>保険等の退職時見込額</span>
                 <input type="number" data-field="insuranceCashAtRetire" min="0" value="1500">
                 <em>万円</em>
                 <small>法人側で退職時に使える積立・金融商品等の見込額を仮置き。</small>
               </label>
-              <label class="input-field">
+<label class="input-field preset-field">
+                <span>最終報酬月額</span>
+                <input type="number" data-field="finalMonthlyComp" min="0" value="120">
+                <em>万円/月</em>
+                <small>参考記録。この画面の必要資金計算には使用しません。税務上の確認は「詳しく試算」へ。</small>
+              </label>
+<label class="input-field">
+                <span>役員在任年数</span>
+                <input type="number" data-field="officerYears" min="0" step="1" value="25">
+                <em>年</em>
+                <small>参考記録。役員在任期間の税務上の扱いは「詳しく試算」で確認してください。</small>
+              </label>
+<label class="input-field preset-field">
+                <span>功績倍率</span>
+                <input type="number" data-field="meritMultiplier" min="0" step="0.1" value="3.0">
+                <em>倍</em>
+                <small>参考記録。この画面では功績倍率法の税務判定をしません。根拠は別途確認してください。</small>
+              </label>
+<label class="input-field">
                 <span>法人借入の保証残</span>
                 <input type="number" data-field="guaranteeDebt" min="0" value="0">
                 <em>万円</em>
                 <small>経営者保証・連帯保証の残額。生活資金から返す個人借入とは別枠で確認。</small>
               </label>
-              <label class="input-field">
+<label class="input-field">
                 <span>保証解除の見込み</span>
                 <select data-field="guaranteeReleaseStatus">
                   <option value="0">未確認</option>
@@ -376,253 +322,56 @@
                   <option value="2">解除見込みあり</option>
                 </select>
                 <small>事業承継時に保証から外れられるかを面談論点にします。</small>
-              </label>
-            </div>
-          </section>
-        </div>
-      </section>
-
-      <section class="panel source-panel">
-        <div class="section-title">
-          <span class="section-index">根拠</span>
-          <div>
-            <h2>プリセットの参考数値</h2>
-            <p>初期値は面談の入口として置いた参考値です。実際の検討では、ねんきん定期便、法人決算、契約資料、見込額資料などで上書きします。</p>
-          </div>
-        </div>
-        <ul class="source-list">
+              </label></div></div></details><details class="detail-fold" id="evidenceDetails"><summary>金額・前提の根拠と参照資料</summary><div class="detail-body"><p>資料確認済みは、出所・確認日・現在の入力に対応する記録がそろった場合だけ有効です。未確認でも試算できます</p><div id="evidenceGrid" class="evidence-grid"></div><div class="field-grid"><label class="migration-check"><input type="checkbox" data-field="migrationReviewed">旧データから引き継いだ前提を確認した</label></div><ul class="source-list">
           <li>老後生活費: <a href="https://www.jili.or.jp/lifeplan/lifesecurity/1141.html" target="_blank" rel="noopener">生命保険文化センター「生活保障に関する調査」2025年度</a>。夫婦2人に必要と考える最低日常生活費23.9万円/月、ゆとりある生活費39.1万円/月。初期値45万円は別の面談用仮定です。</li>
           <li>公的年金: <a href="https://www.nenkin.go.jp/oshirase/taisetu/kojin/2026/202604/0401.html" target="_blank" rel="noopener">日本年金機構 令和8年度年金額</a>。老齢基礎年金満額70,608円/月、厚生年金の標準的な夫婦2人分237,279円/月。</li>
           <li>計画終了年齢: <a href="https://www.mhlw.go.jp/toukei/saikin/hw/life/life24/index.html" target="_blank" rel="noopener">厚生労働省 令和6年簡易生命表</a>は参考資料。入力した終了年齢を平均余命や安全な終了年齢と同一視しません。</li>
           <li>介護費用: <a href="https://www.jili.or.jp/lifeplan/lifesecurity/1116.html" target="_blank" rel="noopener">生命保険文化センター「生命保険に関する全国実態調査」2024年度</a>。過去3年間に介護経験がある2人以上世帯の平均は月9.0万円、一時47.2万円、期間55.0か月。2026-09-30確認。既存入力は変更しません。</li>
           <li>退職金税務: <a href="https://www.nta.go.jp/taxes/shiraberu/taxanswer/shotoku/1420.htm" target="_blank" rel="noopener">国税庁タックスアンサー No.1420 退職金を受け取ったとき</a>。退職所得控除等は個別確認。</li>
           <li>参照情報は2026-09-30時点で確認。統計平均や標準モデルはご本人の受給額・必要額ではありません。</li>
-        </ul>
-      </section>
-      <section class="panel evidence-panel">
-        <div class="section-title"><span class="section-index">確認</span><div><h2>金額・前提の根拠</h2><p>「資料確認済み」は出所と確認日を入力した場合だけ有効です。未入力や仮定のままでも試算はできます。</p></div></div>
-        <div id="evidenceGrid" class="evidence-grid"></div>
-        <label class="migration-check"><input type="checkbox" data-field="migrationReviewed">旧データから引き継いだ前提を確認した</label>
-      </section>
-    </section>
-
-    <aside class="result-column" aria-label="試算結果">
-      <section class="summary-panel" id="legacySummaryPanel" hidden>
-        <h2>旧サマリーの参照</h2>
-        <p>このファイルには元の入力値がないため、数値試算へは引き継ぎません。原文は計画JSONに保持します。</p>
-        <p id="legacyImportError" class="initial-warning" hidden></p>
-        <pre id="legacySummaryText" class="legacy-summary-text"></pre>
-        <button type="button" class="primary-button" id="startFromLegacyButton">新規入力で試算を始める</button>
-      </section>
-      <section class="summary-panel">
-        <div class="summary-head">
-          <div>
-            <p class="eyebrow">逆算結果</p>
-            <h2 id="statusTitle">入力待ち</h2>
-          </div>
-          <span class="status-pill" id="statusPill">試算中</span>
-        </div>
-        <div class="precision-status draft" id="precisionStatus">
-          <strong>仮置き試算</strong>
-          <span>主要な確認項目が未確認です。この状態の数字は提案には使えません。</span>
-          <ul id="precisionNextSteps"></ul>
-        </div>
-        <p class="initial-warning" id="initialValueWarning" hidden>初期値のまま試算しています。実数値で上書きしてください。</p>
-        <p class="initial-warning" id="inputErrors" hidden></p>
-        <p id="periodDescription" class="period-description"></p>
-        <details id="assessmentReasons" class="assessment-reasons"><summary id="assessmentReasonsTitle">判定理由</summary><div id="assessmentReasonList"></div></details>
-        <div id="fundingConditions" class="funding-conditions"></div>
-        <div class="kpi-grid">
-          <article>
-            <span>必要資金</span>
-            <strong id="requiredCapital">-</strong>
-            <small>計画期間の途中も残高を維持する最小額</small>
-          </article>
-          <article>
-            <span>個人資産見込</span>
-            <strong id="personalAtRetire">-</strong>
-            <small>現役中の積立込み</small>
-          </article>
-          <article>
-            <span>必要退職金</span>
-            <strong id="requiredRetirementPay">-</strong>
-            <small>手取り不足から逆算</small>
-          </article>
-          <article>
-            <span>追加準備</span>
-            <strong id="annualPreparation">-</strong>
-            <small>準備期間0年なら即時必要額</small>
-          </article>
-        </div>
-        <div class="reverse-equation" aria-label="必要資金の逆算構造">
-          <div class="reverse-equation__title">
-            <h3>逆算の構造</h3>
-            <p>必要資金を、個人資産見込と必要退職金の手取りで埋める関係です。</p>
-          </div>
-          <div class="equation-row">
-            <div class="equation-term equation-term--need">
-              <span>必要資金</span>
-              <strong id="equationNeed">-</strong>
-            </div>
-            <b>=</b>
-            <div class="equation-term">
-              <span>個人資産見込</span>
-              <strong id="equationPersonal">-</strong>
-            </div>
-            <b>+</b>
-            <div class="equation-term">
-              <span>必要退職金手取</span>
-              <strong id="equationRetirementNet">-</strong>
-            </div>
-          </div>
-          <div class="equation-bar" aria-hidden="true">
-            <span class="equation-bar__personal" id="equationPersonalBar"></span>
-            <span class="equation-bar__retirement" id="equationRetirementBar"></span>
-          </div>
-          <p class="equation-note" id="equationNote">-</p>
-        </div>
-      </section>
-      <section class="basis-panel" id="outsideCostsPanel"><h2>計画期間外の予定費用</h2><p id="outsideCostsText"></p></section>
-
-      <section class="action-panel choice-panel">
-        <div class="chart-title">
-          <div>
-            <h2>不足の所在</h2>
-          </div>
-          <p>診断結果のみを表示します。打ち手の推奨は行いません。</p>
-        </div>
-        <div class="cause-box">
-          <strong id="shortageCauseTitle">診断中</strong>
-          <p id="shortageCauseText">入力値から不足の主因を判定します。</p>
-        </div>
-        <div class="choice-title">
-          <h3>埋め方の選択肢</h3>
-          <p>同じ粒度で並べています。検討したものだけチェックしてください。</p>
-        </div>
-        <div class="option-grid">
-          <article class="option-card">
+        </ul></div></details><details class="detail-fold" id="calculationDetails"><summary>全ての判定理由・計算式・資金構成・感度</summary><div class="detail-body"><details id="assessmentReasons" class="assessment-reasons"><summary id="assessmentReasonsTitle">判定理由</summary><div id="assessmentReasonList"></div></details><div class="kpi-grid"><article><span>引退時の必要資金 合計</span><strong id="requiredCapital">-</strong><small>個人資産・退職金を控除する前</small></article><article><span>引退時の個人資産見込</span><strong id="personalAtRetire">-</strong></article><article><span>必要退職金（額面）</span><strong id="requiredRetirementPay">-</strong></article><article><span>法人準備見込に対する追加積立</span><strong id="annualPreparation">-</strong></article></div><div class="reverse-equation"><h3>必要資金の内訳</h3><div class="equation-row"><div class="equation-term"><span>必要資金</span><strong id="equationNeed"></strong></div><b>=</b><div class="equation-term"><span>個人資産</span><strong id="equationPersonal"></strong></div><b>+</b><div class="equation-term"><span>必要退職金手取</span><strong id="equationRetirementNet"></strong></div></div><div class="equation-bar"><span class="equation-bar__personal" id="equationPersonalBar"></span><span class="equation-bar__retirement" id="equationRetirementBar"></span></div><p id="equationNote"></p></div><div class="basis-grid"><section><h3>計算の内訳</h3><ul id="formulaList" class="check-list"></ul></section><section><h3>要確認アラート</h3><ul id="validationList" class="check-list"></ul></section></div><h3>引退時の必要資金の構成</h3><p id="coverageText"></p><canvas id="fundingChart" width="420" height="260" aria-label="引退時の必要資金の構成"></canvas><div class="legend" id="fundingLegend"></div><h3>感度: 必要退職金（額面）</h3><div class="scenario-grid" id="scenarioGrid"></div></div></details><details class="detail-fold" id="meetingNotes"><summary>ありたい老後・打ち手・面談メモ</summary><div class="detail-body"><div class="field-grid"><label class="textarea-field">
+          <span>老後はこうしたい・こうありたい</span>
+          <textarea data-field="vision" rows="4">夫婦で健康に過ごし、年に数回は旅行へ行ける状態を維持したい。会社に過度に依存せず、退職後の生活費を見える化しておきたい。</textarea>
+        </label></div><div class="cause-box"><strong id="shortageCauseTitle"></strong><p id="shortageCauseText"></p></div><div class="option-grid"><article class="option-card">
             <label><input type="checkbox" data-field="optionSpendReview"><span>支出水準の見直し</span></label>
             <p id="optionSpendReviewContent"></p>
             <dl><dt>想定される効果</dt><dd id="optionSpendReviewEffect"></dd><dt>構造的特徴</dt><dd id="optionSpendReviewFeature"></dd><dt>制約・留意点</dt><dd id="optionSpendReviewCaution"></dd></dl>
-          </article>
-          <article class="option-card">
+          </article><article class="option-card">
             <label><input type="checkbox" data-field="optionRetireLater"><span>引退時期の延長</span></label>
             <p id="optionRetireLaterContent"></p>
             <dl><dt>想定される効果</dt><dd id="optionRetireLaterEffect"></dd><dt>構造的特徴</dt><dd id="optionRetireLaterFeature"></dd><dt>制約・留意点</dt><dd id="optionRetireLaterCaution"></dd></dl>
-          </article>
-          <article class="option-card">
+          </article><article class="option-card">
             <label><input type="checkbox" data-field="optionWorkIncome"><span>引退後収入の継続</span></label>
             <p id="optionWorkIncomeContent"></p>
             <dl><dt>想定される効果</dt><dd id="optionWorkIncomeEffect"></dd><dt>構造的特徴</dt><dd id="optionWorkIncomeFeature"></dd><dt>制約・留意点</dt><dd id="optionWorkIncomeCaution"></dd></dl>
-          </article>
-          <article class="option-card">
+          </article><article class="option-card">
             <label><input type="checkbox" data-field="optionPersonalSaving"><span>個人積立の増額</span></label>
             <p id="optionPersonalSavingContent"></p>
             <dl><dt>想定される効果</dt><dd id="optionPersonalSavingEffect"></dd><dt>構造的特徴</dt><dd id="optionPersonalSavingFeature"></dd><dt>制約・留意点</dt><dd id="optionPersonalSavingCaution"></dd></dl>
-          </article>
-          <article class="option-card">
+          </article><article class="option-card">
             <label><input type="checkbox" data-field="optionCorporateReserve"><span>法人内部留保の積み増し</span></label>
             <p id="optionCorporateReserveContent"></p>
             <dl><dt>想定される効果</dt><dd id="optionCorporateReserveEffect"></dd><dt>構造的特徴</dt><dd id="optionCorporateReserveFeature"></dd><dt>制約・留意点</dt><dd id="optionCorporateReserveCaution"></dd></dl>
-          </article>
-          <article class="option-card">
+          </article><article class="option-card">
             <label><input type="checkbox" data-field="optionInsuranceReserve"><span>法人側の目的別積立</span></label>
             <p id="optionInsuranceReserveContent"></p>
             <dl><dt>想定される効果</dt><dd id="optionInsuranceReserveEffect"></dd><dt>構造的特徴</dt><dd id="optionInsuranceReserveFeature"></dd><dt>制約・留意点</dt><dd id="optionInsuranceReserveCaution"></dd></dl>
-          </article>
-        </div>
-      </section>
-
-      <section class="checklist-panel">
-        <div class="chart-title">
-          <div>
-            <h2>前提確認チェック</h2>
-            <p id="uncheckedCheckCount">未確認 7件</p>
-          </div>
-        </div>
-        <p class="checklist-note">チェックだけでは資料確認済みにはなりません。重要な金額の出所と確認日は左の根拠欄に記録してください。</p>
-        <div class="proposal-checks">
-          <label><input type="checkbox" data-field="checkNenkinSelf">ねんきん定期便を確認したか</label>
-          <label><input type="checkbox" data-field="checkNenkinSpouse">配偶者の年金加入歴を確認したか</label>
-          <label><input type="checkbox" data-field="checkRetirementRule">役員退職給与規程を確認したか</label>
-          <label><input type="checkbox" data-field="checkMeritLimit">功績倍率法の目安と予定退職金の整合を確認したか</label>
-          <label><input type="checkbox" data-field="checkGuaranteeDebt">法人借入の経営者保証残を確認したか</label>
-          <label><input type="checkbox" data-field="checkGuaranteeRelease">保証解除の見込みを確認したか</label>
-          <label><input type="checkbox" data-field="checkInsuranceCash">法人側の積立・金融商品の退職時見込額を確認したか</label>
-        </div>
-      </section>
-
-      <section class="summary-output-panel">
-        <div class="chart-title">
-          <div>
-            <h2>論点整理サマリー</h2>
-            <p>面談記録として保存・共有するための出力です。</p>
-          </div>
-        </div>
-        <label class="textarea-field">
+          </article></div><h3>前提確認チェック <small id="uncheckedCheckCount"></small></h3><p>チェックのみで資料確認済みにはなりません</p><div class="field-grid"><label><input type="checkbox" data-field="checkNenkinSelf">ねんきん定期便を確認したか</label>
+<label><input type="checkbox" data-field="checkNenkinSpouse">配偶者の年金加入歴を確認したか</label>
+<label><input type="checkbox" data-field="checkRetirementRule">役員退職給与規程を確認したか</label>
+<label><input type="checkbox" data-field="checkMeritLimit">功績倍率法の目安と予定退職金の整合を確認したか</label>
+<label><input type="checkbox" data-field="checkGuaranteeDebt">法人借入の経営者保証残を確認したか</label>
+<label><input type="checkbox" data-field="checkGuaranteeRelease">保証解除の見込みを確認したか</label>
+<label><input type="checkbox" data-field="checkInsuranceCash">法人側の積立・金融商品の退職時見込額を確認したか</label></div><div class="field-grid"><label class="textarea-field">
           <span>経営者が選んだ方向性</span>
           <textarea data-field="selectedDirection" rows="3" placeholder="例: 支出水準は維持し、個人積立と法人内部留保を増やす方向で次回確認。"></textarea>
-        </label>
-        <div class="summary-actions">
-          <button type="button" class="ghost-button" id="generateSummaryButton">テキスト生成</button>
-          <button type="button" class="ghost-button" id="downloadSummaryJsonButton">JSON出力</button>
-        </div>
-        <textarea id="summaryOutput" class="summary-output" rows="12" readonly></textarea>
-        <pre id="printSummary" class="print-summary" aria-hidden="true"></pre>
-      </section>
-
-      <section class="basis-panel">
-        <div class="chart-title">
-          <div>
-            <h2>計算根拠チェック</h2>
-            <p>結果の数字と、面談前に潰すべき前提を同じ場所で確認します。</p>
-          </div>
-        </div>
-        <div class="basis-grid">
-          <section>
-            <h3>計算の内訳</h3>
-            <ul id="formulaList" class="check-list"></ul>
-          </section>
-          <section>
-            <h3>要確認アラート</h3>
-            <ul id="validationList" class="check-list"></ul>
-          </section>
-        </div>
-      </section>
-
-      <section class="chart-panel">
-        <div class="chart-title">
-          <h2>資金の構成</h2>
-          <p id="coverageText">-</p>
-        </div>
-        <canvas id="fundingChart" width="420" height="260" aria-label="資金構成グラフ"></canvas>
-        <div class="legend" id="fundingLegend"></div>
-      </section>
-
-      <section class="chart-panel">
-        <div class="chart-title">
-          <h2>引退後の残高推移</h2>
-          <p id="runoutText">-</p>
-        </div>
-        <canvas id="balanceChart" width="420" height="240" aria-label="引退後残高推移"></canvas>
-      </section>
-
-      <section class="scenario-panel">
-        <div class="chart-title">
-          <h2>感度</h2>
-          <p>支出水準と利回りが変わった場合の必要退職金です。</p>
-        </div>
-        <div class="scenario-grid" id="scenarioGrid"></div>
-      </section>
-    </aside>
-  </main>
-
+        </label></div><div class="summary-actions"><button type="button" class="ghost-button" id="generateSummaryButton">面談テキスト生成</button><button type="button" class="ghost-button" id="downloadSummaryJsonButton">サマリーJSON出力</button></div><textarea id="summaryOutput" class="summary-output" rows="12" readonly aria-label="面談サマリー"></textarea></div></details></section><section class="print-only" id="printMeetingSummary"></section><pre id="printSummary" class="print-summary" aria-hidden="true"></pre></main>
   <footer class="mk-mini">
     © <span id="cpy-year">2026</span>
     <a href="https://www.matsumoto-kaikei.or.jp/" target="_blank" rel="noopener license">税理士法人松本会計事務所</a> ｜
     <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="license noopener">CC BY-NC-SA 4.0</a> ｜
     <a href="/tool-portal/terms.html" target="_blank" rel="noopener">利用条件</a> ｜
-    <span id="build-rev">Rev.5</span>（<span id="last-updated-date"></span>）
+    <span id="build-rev">Rev.6</span>（<span id="last-updated-date"></span>）
   </footer>
 
   <dialog id="calcDialog" class="calc-dialog">

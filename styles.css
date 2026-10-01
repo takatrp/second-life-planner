@@ -1183,3 +1183,86 @@ canvas {
     break-inside: avoid;
   }
 }
+
+/* Meeting flow: essential inputs, clear results, then optional detail. */
+[hidden] { display: none !important; }
+.step-nav { max-width: 1120px; margin: 20px auto 0; display:flex; gap:24px; padding:0 16px; flex-wrap:wrap; }
+.step-nav a { color:var(--green); font-weight:700; text-decoration:none; font-size:14px; }
+.app-shell { width:min(1120px, calc(100% - 32px)); display:block; }
+.input-column,.result-column,.details-area { display:grid; gap:18px; position:static; margin-bottom:24px; }
+#basicInputs,#meetingResults,#detailsArea,details[id] { scroll-margin-top:130px; }
+.basic-panel .field-grid { grid-template-columns:repeat(4,minmax(0,1fr)); margin-bottom:16px; }
+.basic-panel .field-grid:has(.total-expense-field) { grid-template-columns:1fr; }
+.total-expense-field { max-width:420px; padding:14px; background:var(--surface-2); border-radius:8px; }
+.total-expense-field input { font-size:24px; font-weight:700; }
+input[readonly] { background:#f0f2f2; color:var(--muted); }
+.mode-summary,.detail-note { font-size:13px; line-height:1.7; color:var(--muted); }
+.assumption-strip { border-top:1px solid var(--line); padding-top:14px; font-size:12px; line-height:1.65; color:var(--muted); }
+.assumption-strip p { margin:6px 0; }
+.assumption-strip a,.company-readiness a { color:var(--green); }
+.meeting-panel { padding:24px; }
+.summary-head h3 { margin:0; font-size:16px; }
+.meeting-kpis { display:grid; grid-template-columns:1.2fr 1fr; gap:16px; margin:16px 0; }
+.meeting-kpis article { background:var(--surface-2); padding:18px; border-radius:8px; }
+.meeting-kpis span { display:block; font-size:13px; font-weight:700; color:var(--muted); }
+.meeting-kpis strong { display:block; font-size:clamp(24px,3vw,34px); margin:8px 0; color:var(--green); }
+.meeting-kpis small { display:block; font-size:12px; color:var(--muted); line-height:1.6; }
+.compact-status { padding:12px 14px; font-size:12px; margin:0 0 12px; background:#f6f7f7; }
+.compact-status strong { font-size:13px; }
+.compact-status ul { margin:6px 0 0; list-style:none; padding:0; }
+.compact-status a { color:var(--green); }
+.essential-warnings { padding-left:20px; color:var(--red); font-size:13px; line-height:1.65; }
+.essential-warnings:empty { display:none; }
+.funding-conditions { font-size:13px; line-height:1.65; }
+.outside-costs { border-left:3px solid var(--amber); padding:0 12px; margin:14px 0 24px; font-size:13px; line-height:1.65; }
+.outside-costs h3 { font-size:13px; margin:0 0 4px; }
+#balanceChart { width:100%; height:auto; display:block; }
+.quick-comparison { border-top:1px solid var(--line); margin-top:20px; padding-top:20px; }
+.quick-comparison h3 { margin:0 0 8px; }
+.quick-comparison > p { color:var(--muted); font-size:12px; line-height:1.6; }
+.quick-controls,.quick-results { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
+.quick-controls label { display:grid; gap:6px; font-size:12px; }
+.quick-controls input { width:100%; padding:10px; border:1px solid var(--line); border-radius:6px; }
+.quick-results { margin:12px 0; }
+.quick-results article { padding:14px; background:var(--surface-2); border-radius:7px; font-size:13px; line-height:1.6; }
+.quick-results p { margin:5px 0; font-weight:700; }
+.company-readiness { padding:20px; }
+.company-readiness p { font-size:13px; line-height:1.7; }
+.muted { color:var(--muted); }
+.detail-fold { border:1px solid var(--line); border-radius:8px; background:white; }
+.detail-fold > summary { cursor:pointer; font-weight:700; padding:18px; font-size:15px; }
+.detail-fold[open] > summary { border-bottom:1px solid var(--line); }
+.detail-body { padding:20px; }
+.detail-body .field-grid { grid-template-columns:repeat(3,minmax(0,1fr)); margin:12px 0; }
+.detail-body .field-grid:has(.textarea-field) { grid-template-columns:1fr; }
+.detail-body > .input-field { display:grid; gap:8px; max-width:540px; }
+.detail-body .migration-check { display:flex; gap:8px; }
+.print-only { display:none; }
+.print-summary { display:none; }
+@media(max-width:720px) {
+  .topbar { position:static; }
+  .step-nav { gap:14px; margin-top:14px; }
+  .app-shell { width:calc(100% - 20px); }
+  .basic-panel .field-grid,.detail-body .field-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .meeting-kpis,.quick-controls,.quick-results { grid-template-columns:1fr; }
+  .meeting-panel,.detail-body { padding:16px; }
+  .meeting-kpis strong { font-size:25px; }
+  #basicInputs,#meetingResults,#detailsArea,details[id] { scroll-margin-top:20px; }
+}
+@media(max-width:420px) { .basic-panel .field-grid,.detail-body .field-grid { grid-template-columns:1fr; } }
+@page { size:A4 portrait; margin:14mm; }
+@media print {
+  .topbar,.step-nav,.input-column,.result-column,.details-area,.print-summary,footer.mk-mini { display:none !important; }
+  .app-shell { display:block; width:auto; margin:0; }
+  .print-only { display:block !important; color:#17211d; font:10.5pt/1.45 sans-serif; }
+  .print-only h1 { font-size:18pt; margin:0 0 5mm; }
+  .print-only h2 { font-size:11pt; margin:0 0 1.5mm; }
+  .print-only section { border-top:1px solid #ccd7d2; padding-top:3mm; margin-top:3mm; break-inside:avoid; }
+  .print-only p { margin:0; overflow-wrap:anywhere; }
+}
+.result-column.is-invalid .meeting-kpis,
+.result-column.is-invalid #balanceChart,
+.result-column.is-invalid .quick-comparison,
+.result-column.is-invalid .essential-warnings,
+.result-column.is-invalid .outside-costs,
+.result-column.is-invalid .company-readiness { display:none !important; }

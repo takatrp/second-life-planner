@@ -184,3 +184,234 @@ test('later retirement comparison uses the original retirement age as evaluation
   near(comparison.householdImprovement,
     comparison.before.householdGap-comparison.after.householdGap/1.02**2);
 });
+
+test('annuity duration is a whole nonnegative year count', () => {
+  for (const years of [0,1,2]) {
+    const r=calc({lifeAge:68,annuityAnnual:100,annuityYears:years});
+    assert.deepEqual(r.cashflows.map(flow=>flow.annuity),[0,1,2].map(index=>index<years ? 100:0));
+  }
+  for (const years of [0.5,1.5,-1,NaN,Infinity,'1']) {
+    const r=calc({annuityAnnual:100,annuityYears:years});
+    assert.equal(r.assessment.key,'error');
+    assert.deepEqual(r.cashflows,[]);
+    assert.ok(r.errors.some(error=>error.includes('年金保険の期間')));
+  }
+});
+
+test('exact zero need has neutral coverage, no shortage and no signed-zero output', () => {
+  for (const overrides of [
+    {expenseMode:'total',monthlyExpenseTotal:0,monthlyLife:0},
+    {expenseMode:'total',monthlyExpenseTotal:0,monthlyLife:0,personalAssetsNow:100,pensionSelf:10},
+    {expenseMode:'total',monthlyExpenseTotal:0.1,pensionSelf:1.2},
+    {expenseMode:'total',monthlyExpenseTotal:-0,monthlyLife:-0,retirementReturn:-1}
+  ]) {
+    const s=base(overrides);
+    const r=model.calculate({...s,evidence:{...fullEvidence(s),monthlyExpenseTotal:evidenceFor(s,'monthlyExpenseTotal'),
+      pensionSelf:evidenceFor(s,'pensionSelf')}});
+    assert.equal(r.requiredCapital,0);
+    assert.equal(r.householdGap,0);
+    assert.equal(r.requiredNetFromCompany,0);
+    assert.equal(r.coverageRatio,1);
+    assert.equal(r.planRunout,undefined);
+    assert.notEqual(r.assessment.key,'shortage');
+    for (const item of [r,...r.fullBalances,...r.planBalances])
+      for (const value of Object.values(item))
+        if (typeof value==='number') assert.equal(Object.is(value,-0),false);
+  }
+});
+
+test('capital search preserves integer boundaries and genuine tiny positive needs', () => {
+  for (const [monthly,total] of [[0.3,72],[0.1,24]]) {
+    const r=calc({expenseMode:'total',monthlyExpenseTotal:monthly});
+    assert.equal(r.requiredCapital,total);
+    assert.equal(Math.ceil(r.requiredCapital),total);
+    assert.ok(r.fullBalances.every(flow=>flow.afterCashflow>=0 && flow.endBalance>=0));
+    assert.equal(r.fullBalances.at(-1).endBalance,0);
+  }
+  const above=calc({expenseMode:'total',monthlyExpenseTotal:(72+1e-8)/240});
+  assert.ok(above.requiredCapital>72);
+  near(above.requiredCapital,72+1e-8,1e-11);
+  assert.equal(Math.ceil(above.requiredCapital),73);
+  for (const monthly of [1e-9,Number.MIN_VALUE]) {
+    const tiny=calc({expenseMode:'total',monthlyExpenseTotal:monthly});
+    assert.ok(tiny.requiredCapital>0);
+    assert.equal(Math.ceil(tiny.requiredCapital),1);
+    if (monthly===1e-9) near(tiny.requiredCapital,2.4e-7,1e-19);
+  }
+  const oneTime=calc({expenseMode:'total',monthlyExpenseTotal:0,pensionSelf:10,oneTimeEvent:72});
+  assert.equal(oneTime.requiredCapital,72);
+  assert.equal(Math.ceil(oneTime.requiredCapital),72);
+});
+
+test('capital precision follows machine scale at high positive and negative returns', () => {
+  for (const retirementReturn of [-99.9,-99,100]) {
+    const r=calc({lifeAge:67,expenseMode:'total',monthlyExpenseTotal:0.3,retirementReturn});
+    const expected=r.annualBasicSpend*(1+1/(1+r.state.retireRate));
+    near(r.requiredCapital,expected,Math.abs(expected)*Number.EPSILON*32);
+    assert.ok(r.fullBalances.every(flow=>Number.isFinite(flow.endBalance) && flow.endBalance>=0));
+    assert.ok(model.simulate(r.cashflows,r.requiredCapital-1e-7,r.state.retireRate,r.oneTimeAtRetire)
+      .some(flow=>flow.afterCashflow<0 || flow.endBalance<0));
+  }
+});
+
+test('precision guard preserves maximum-scale fractional need and its shortage year', () => {
+  const spending=12e9*120;
+  for (const oneTimeEvent of [0.001,0.01,0.1]) {
+    const r=calc({currentAge:0,retireAge:0,lifeAge:120,expenseMode:'total',monthlyExpenseTotal:1e9,oneTimeEvent});
+    assert.equal(r.requiredCapital,spending+oneTimeEvent);
+    assert.ok(r.requiredCapital>spending);
+    assert.equal(Math.ceil(r.requiredCapital),spending+1);
+  }
+  const basicTotal=12e9*109;
+  const r=calc({currentAge:0,retireAge:11,lifeAge:120,expenseMode:'total',monthlyExpenseTotal:1e9,
+    oneTimeEvent:0.1,preRetireReturn:100,personalAssetsNow:basicTotal/2**11});
+  assert.equal(r.personalAtRetire,basicTotal);
+  assert.equal(r.requiredCapital,basicTotal+0.1);
+  assert.equal(r.householdGap,r.requiredCapital-r.personalAtRetire);
+  assert.ok(r.householdGap>0);
+  assert.equal(r.planRunout.age,119);
+  assert.equal(r.planBalances.at(-1).endBalance,-r.householdGap);
+  assert.equal(r.assessment.key,'shortage');
+  assert.ok(r.fullBalances.every(flow=>flow.afterCashflow>=0 && flow.endBalance>=0));
+});
+
+test('strict zero bound distinguishes a real deficit between large income and expense operands', () => {
+  const r=calc({expenseMode:'total',monthlyExpenseTotal:83333333.33333334,pensionSelf:1e9});
+  assert.ok(r.annualBasicSpend>1e9);
+  const deficit=r.annualBasicSpend-1e9;
+  assert.equal(r.requiredCapital,deficit*20);
+  assert.ok(r.requiredCapital>0);
+  assert.ok(r.planBalances.at(-1).endBalance<0);
+  assert.ok(r.planRunout);
+  assert.equal(r.assessment.key,'shortage');
+});
+
+test('nonzero-return bound retains a small future need alongside large balanced flows', () => {
+  const r=calc({currentAge:0,retireAge:0,lifeAge:120,monthlyLife:0,annualMedical:1e9,
+    otherIncome:1e9,careOneTime:0.1,careStartAge:119,retirementReturn:2});
+  assert.equal(r.errors.length,0);
+  assert.ok(r.cashflows.slice(0,-1).every(flow=>flow.deficit===0));
+  const expected=r.cashflows.at(-1).deficit/1.02**119;
+  near(r.requiredCapital,expected,Math.abs(expected)*Number.EPSILON*64);
+  assert.ok(r.requiredCapital>0);
+  assert.equal(r.planRunout.age,119);
+  assert.ok(r.fullBalances.every(flow=>flow.afterCashflow>=0 && flow.endBalance>=0));
+});
+
+test('annual basic expense arithmetic retains decimal, exponent and subnormal input precision', () => {
+  const decimal=calc({expenseMode:'breakdown',monthlyLife:0.1,monthlyHousing:0.2,annualMedical:0,annualDream:0});
+  assert.equal(decimal.annualBasicSpend,3.6);
+  assert.equal(decimal.requiredCapital,72);
+  assert.equal(decimal.state.monthlyLife,0.1);
+  assert.equal(decimal.state.monthlyHousing,0.2);
+  const exponent=calc({expenseMode:'total',monthlyExpenseTotal:1e-9});
+  assert.equal(exponent.annualBasicSpend,1.2e-8);
+  assert.equal(exponent.state.monthlyExpenseTotal,1e-9);
+  const subnormal=calc({expenseMode:'total',monthlyExpenseTotal:Number.MIN_VALUE});
+  assert.equal(subnormal.annualBasicSpend,Number.MIN_VALUE*12);
+  assert.ok(subnormal.requiredCapital>0);
+});
+
+test('missing-only inferred decimal total preserves legacy expense-mode roundtrip', () => {
+  const original=base({monthlyLife:0.1,monthlyHousing:0.2});
+  const normalized=model.normalizeExpenseState(original);
+  assert.equal(normalized.monthlyExpenseTotal,0.3);
+  assert.equal(model.calculate(normalized).requiredCapital,72);
+  const total={...normalized,expenseMode:'total'};
+  assert.equal(model.calculate(total).requiredCapital,72);
+  assert.equal(model.calculate({...total,expenseMode:'breakdown'}).requiredCapital,72);
+  assert.equal(original.monthlyExpenseTotal,undefined);
+  const explicit=0.30000000000000004;
+  assert.equal(model.normalizeExpenseState({...original,monthlyExpenseTotal:explicit}).monthlyExpenseTotal,explicit);
+  assert.equal(model.normalizeExpenseState({...original,expenseMode:'total'}).monthlyExpenseTotal,undefined);
+});
+
+test('total and breakdown modes use one active expense amount and preserve inactive values', () => {
+  const s=base({monthlyLife:10,monthlyHousing:2,annualMedical:24,annualDream:96});
+  const normalized=model.normalizeExpenseState(s);
+  assert.equal(normalized.expenseMode,'breakdown');
+  assert.equal(normalized.monthlyExpenseTotal,22);
+  assert.equal(s.expenseMode,undefined);
+  assert.equal(s.monthlyExpenseTotal,undefined);
+  const breakdown=model.calculate({...s,expenseMode:'breakdown',monthlyExpenseTotal:999});
+  const total=model.calculate({...s,expenseMode:'total',monthlyExpenseTotal:22});
+  assert.equal(breakdown.annualBasicSpend,264);
+  assert.equal(total.annualBasicSpend,264);
+  assert.equal(breakdown.requiredCapital,total.requiredCapital);
+  assert.equal(breakdown.state.monthlyExpenseTotal,999);
+  assert.equal(total.state.annualDream,96);
+  assert.deepEqual(model.activeExpenseKeys(total.state),['monthlyExpenseTotal']);
+  const incomplete={...s}; delete incomplete.annualDream;
+  assert.equal(model.normalizeExpenseState(incomplete).monthlyExpenseTotal,undefined);
+  assert.equal(model.calculate(incomplete).assessment.key,'error');
+  assert.equal(model.calculate({...s,expenseMode:'total'}).assessment.key,'error');
+});
+
+test('expense evidence certifies only the active mode and invalidates on a mode change', () => {
+  const s=base({expenseMode:'total',monthlyExpenseTotal:10,personalAssetsNow:10000});
+  const evidence=fullEvidence(s);
+  for (const key of ['monthlyLife','monthlyHousing','annualMedical','annualDream']) delete evidence[key];
+  evidence.monthlyExpenseTotal=evidenceFor(s,'monthlyExpenseTotal');
+  assert.equal(model.calculate({...s,evidence}).assessment.key,'adequate');
+  assert.equal(model.calculate({...s,monthlyExpenseTotal:11,evidence}).assessment.key,'assumed');
+  assert.equal(model.calculate({...s,expenseMode:'breakdown',evidence}).assessment.key,'assumed');
+});
+
+test('v2 requires every model field before any defaults can be applied', () => {
+  const state=base({expenseMode:'total',monthlyExpenseTotal:10});
+  const envelope={version:2,state,sources:{custom:'retained'}};
+  assert.deepEqual(model.migrate(JSON.stringify(envelope)),envelope);
+  for (const key of Object.keys(state).filter(key=>key!=='expenseMode')) {
+    const incomplete=structuredClone(envelope);
+    delete incomplete.state[key];
+    assert.throws(()=>model.migrate(JSON.stringify(incomplete)),undefined,`missing ${key}`);
+  }
+  const oldV2={version:2,state:base({monthlyLife:12.3456789}),sources:{custom:'retained'}};
+  const loaded=model.migrate(JSON.stringify(oldV2));
+  assert.deepEqual(loaded,oldV2);
+  assert.equal(loaded.state.monthlyExpenseTotal,undefined);
+  assert.equal(model.calculate(loaded.state).annualBasicSpend,12.3456789*12);
+  assert.equal(model.calculate(loaded.state).state.expenseMode,'breakdown');
+});
+
+test('v2 rejects nonfinite, out-of-range, wrong-type and malformed evidence values', () => {
+  const invalid=[
+    {monthlyLife:null},{monthlyLife:Infinity},{monthlyLife:NaN},{monthlyLife:'10'},
+    {monthlyLife:-1},{monthlyLife:1e9+1},{currentAge:65.5},{lifeAge:65},
+    {annuityYears:1.5},{careMonths:1.5},{careMonths:1201},
+    {retirementReturn:-100},{inflationRate:101},{pensionSelfNetRatio:0},
+    {hasSpouse:'1'},{careSubject:'unknown'},{priceBasis:'unknown'},
+    {pensionSelfBasis:'unknown'},{pensionSpouseBasis:'unknown'},
+    {expenseMode:'unknown'},{confirmedPayable:'10'},{confirmedPayable:-1},
+    {confirmedPayable:1e9+1},{evidence:null},{evidence:[]},{evidence:3},
+    {evidence:true},{evidence:'bad'},{evidence:{monthlyLife:7}},
+    {evidence:{monthlyLife:[]}},{evidence:{monthlyLife:{status:'unknown'}}},
+    {evidence:{monthlyLife:{source:3}}},{evidence:{monthlyLife:{verifiedValue:3}}},
+    {pensionSelfYears:1.5}
+  ];
+  for (const patch of invalid) {
+    const envelope={version:2,state:base(patch)};
+    const raw=JSON.stringify(envelope);
+    assert.throws(()=>model.migrate(raw),undefined,JSON.stringify(patch));
+    assert.equal(JSON.stringify(envelope),raw);
+  }
+  const metadata={version:2,state:base({evidence:{customMetadata:{owner:'kept'},monthlyLife:{status:'assumed'}}})};
+  assert.deepEqual(model.migrate(JSON.stringify(metadata)),metadata);
+});
+
+test('legacyOriginal only exempts an exact legitimate migration from v2 completeness', () => {
+  const raw=' {"currentAge":55,"careMonthly":8.3,"pensionSpouse":90} ';
+  const legitimate=model.migrate(raw);
+  assert.equal(legitimate.legacyOriginal,raw);
+  assert.deepEqual(model.migrate(JSON.stringify(legitimate)),legitimate);
+  for (const legacyOriginal of ['{}','not JSON',raw,JSON.stringify({version:2,state:{}})])
+    assert.throws(()=>model.migrate(JSON.stringify({version:2,state:{},legacyOriginal})));
+  const altered=structuredClone(legitimate);
+  altered.state.currentAge=56;
+  assert.throws(()=>model.migrate(JSON.stringify(altered)));
+  const bypass={version:2,state:base(),legacyOriginal:raw};
+  delete bypass.state.pensionSelf;
+  assert.throws(()=>model.migrate(JSON.stringify(bypass)));
+  const invalidKnownEvidence={version:2,state:base({evidence:{monthlyLife:7}}),legacyOriginal:raw};
+  assert.throws(()=>model.migrate(JSON.stringify(invalidKnownEvidence)));
+});
