@@ -20,6 +20,8 @@
       </div>
       <div class="topbar__actions">
         <button class="ghost-button" id="saveButton" type="button">保存</button>
+        <button class="ghost-button" id="exportPlanButton" type="button">計画を出力</button>
+        <label class="ghost-button file-button">計画を読込<input id="importPlanInput" type="file" accept="application/json,.json" hidden></label>
         <button class="ghost-button" id="resetButton" type="button">初期化</button>
         <button class="primary-button" id="printButton" type="button">印刷</button>
       </div>
@@ -47,7 +49,7 @@
           <span class="section-index">02</span>
           <div>
             <h2>期間の前提</h2>
-            <p>現役から引退、平均余命までをつなげます。</p>
+            <p>現役から引退、ご自身で設定する計画終了年齢までをつなげます。</p>
           </div>
         </div>
         <div class="field-grid compact">
@@ -64,10 +66,10 @@
             <small>公的年金の標準的な受給開始年齢に合わせた初期値。</small>
           </label>
           <label class="input-field">
-            <span>平均余命の目安</span>
+            <span>計画終了年齢</span>
             <input type="number" data-field="lifeAge" min="60" max="110" value="88">
             <em>歳</em>
-            <small>令和6年簡易生命表では65歳時の平均余命は男性約19.5年、女性約24.4年。</small>
+            <small>ここで設定した年齢になるまでを試算。平均余命とは異なり、ご自身で設定する計画期間です。</small>
           </label>
           <label class="input-field">
             <span>公的年金開始</span>
@@ -89,6 +91,11 @@
             <em>歳</em>
             <small>本人より2歳若い例示値。年金開始や生活期間の会話用。</small>
           </label>
+          <label class="input-field">
+            <span>金額の価格基準</span>
+            <select data-field="priceBasis"><option value="current">現在の購買力</option><option value="retirement" selected>退職時点の名目額</option></select>
+            <small>現在価格なら引退前から、退職時点価格なら引退後から支出に物価上昇を反映。収入は固定額です。</small>
+          </label>
         </div>
       </section>
 
@@ -105,7 +112,7 @@
             <span>基本生活費</span>
             <input type="number" data-field="monthlyLife" min="0" value="45">
             <em>万円/月</em>
-            <small>生命保険文化センターの2025年度調査では、夫婦2人の最低日常生活費23.9万円、ゆとりある生活費39.1万円/月。経営者相談用に余裕を乗せています。</small>
+            <small>2025年度調査では夫婦2人の最低日常生活費23.9万円、ゆとりある生活費39.1万円/月。45万円は面談用仮定です。下の医療・趣味費と重複しない額に直してください。</small>
           </label>
           <label class="input-field">
             <span>住居費</span>
@@ -117,13 +124,13 @@
             <span>医療・健康維持</span>
             <input type="number" data-field="annualMedical" min="0" value="35">
             <em>万円/年</em>
-            <small>夫婦の医療費・健診・人間ドック等を年額で置いた面談用目安。</small>
+            <small>夫婦の医療費・健診等の面談用仮定。基本生活費に含む場合は0にしてください。</small>
           </label>
           <label class="input-field">
             <span>趣味・旅行・会食</span>
             <input type="number" data-field="annualDream" min="0" value="240">
             <em>万円/年</em>
-            <small>ゆとり費の代表用途は旅行・レジャー、日常生活の充実、趣味・教養。月20万円の上乗せ例。</small>
+            <small>旅行・会食等、基本生活費に含めない分だけの上乗せ仮定。重複する場合は0にしてください。</small>
           </label>
           <label class="input-field">
             <span>退職時イベント</span>
@@ -137,24 +144,26 @@
             <em>万円</em>
             <small>教育・結婚・住宅・節目祝い等の支援を一括予備費として仮置き。</small>
           </label>
-          <label class="input-field preset-field">
+          <label class="input-field stat-field">
             <span>介護月額</span>
-            <input type="number" data-field="careMonthly" min="0" step="0.1" value="8.3">
+            <input type="number" data-field="careMonthly" min="0" step="0.1" value="9.0">
             <em>万円/月</em>
-            <small>生命保険文化センター調査の平均月額8.3万円を初期値。施設介護想定なら20〜30万円台も検討。</small>
+            <small>生命保険文化センター2024年度調査、経験世帯の平均月9.0万円。個人の必要額・上限ではありません。</small>
           </label>
-          <label class="input-field">
+          <label class="input-field stat-field">
             <span>介護期間</span>
-            <input type="number" data-field="careYears" min="0" step="0.5" value="5">
-            <em>年</em>
-            <small>平均約5年を出発点に、在宅・施設・家族支援の方針で調整。</small>
+            <input type="number" data-field="careMonths" min="0" step="1" value="55">
+            <em>か月</em>
+            <small>同調査の平均55.0か月。1か月単位で年次費用へ配分します。</small>
           </label>
-          <label class="input-field">
+          <label class="input-field stat-field">
             <span>介護一時費用</span>
-            <input type="number" data-field="careOneTime" min="0" value="74">
+            <input type="number" data-field="careOneTime" min="0" value="47.2">
             <em>万円</em>
-            <small>住宅改修、福祉用具、入居準備などの一時費用。公表平均約74万円を初期値。</small>
+            <small>同調査の一時費用平均47.2万円。開始時に一度だけ計上します。</small>
           </label>
+          <label class="input-field"><span>介護開始年齢</span><input type="number" data-field="careStartAge" min="0" max="110" value="78"><em>歳</em><small>対象者の年齢。78歳は相談用の仮定です。</small></label>
+          <label class="input-field"><span>介護対象者</span><select data-field="careSubject"><option value="self">本人</option><option value="spouse">配偶者</option></select><small>対象者の年齢で開始時期を判定します。</small></label>
           <label class="input-field">
             <span>退職時の借入残</span>
             <input type="number" data-field="debtAtRetire" min="0" value="0">
@@ -179,13 +188,15 @@
             <em>万円/年</em>
             <small>仮置き値。役員報酬を抑えた経営者は下振れしやすいため、ねんきん定期便で必ず上書き。</small>
           </label>
+          <label class="input-field"><span>本人年金の金額区分</span><select data-field="pensionSelfBasis"><option value="net">手取り見込</option><option value="gross">額面</option></select><small>額面の場合は下の手取り仮定率を適用します。</small></label>
+          <label class="input-field"><span>本人年金の手取り仮定率</span><input type="number" data-field="pensionSelfNetRatio" min="1" max="100" value="100"><em>%</em><small>額面入力時だけ使用。税・社会保険料を自動計算しません。</small></label>
           <label class="input-field">
             <span>本人年金の確認</span>
             <select data-field="pensionSelfChecked">
               <option value="0">未確認</option>
-              <option value="1">定期便で確認済み</option>
+              <option value="1">確認の申告あり</option>
             </select>
-            <small>未確認のままでは結果欄に警告を出します。</small>
+            <small>この申告だけでは資料確認済みにはなりません。出所と確認日を根拠欄に記録してください。</small>
           </label>
           <label class="input-field preset-field">
             <span>配偶者の公的年金</span>
@@ -193,13 +204,16 @@
             <em>万円/年</em>
             <small>専業主婦、役員、勤務歴で大きく変わります。加給年金・振替加算も個別確認。</small>
           </label>
+          <label class="input-field"><span>配偶者年金開始年齢</span><input type="number" data-field="spousePensionStartAge" min="60" max="75" value="65"><em>歳</em><small>配偶者自身の年齢で判定します。</small></label>
+          <label class="input-field"><span>配偶者年金の金額区分</span><select data-field="pensionSpouseBasis"><option value="net">手取り見込</option><option value="gross">額面</option></select><small>額面なら下の手取り仮定率を適用します。</small></label>
+          <label class="input-field"><span>配偶者年金の手取り仮定率</span><input type="number" data-field="pensionSpouseNetRatio" min="1" max="100" value="100"><em>%</em><small>税・社会保険料を自動計算しません。</small></label>
           <label class="input-field">
             <span>配偶者年金の確認</span>
             <select data-field="pensionSpouseChecked">
               <option value="0">未確認</option>
-              <option value="1">加入歴確認済み</option>
+              <option value="1">確認の申告あり</option>
             </select>
-            <small>配偶者ありの場合は加入歴確認フラグとして使います。</small>
+            <small>配偶者ありの場合の面談メモです。出所と確認日を根拠欄に記録してください。</small>
           </label>
           <label class="input-field">
             <span>年金保険など</span>
@@ -315,19 +329,19 @@
                 <span>最終報酬月額</span>
                 <input type="number" data-field="finalMonthlyComp" min="0" value="120">
                 <em>万円/月</em>
-                <small>功績倍率法の損金算入目安に使う月額。役員退職給与規程・議事録と照合。</small>
+                <small>参考記録。この画面の必要資金計算には使用しません。税務上の確認は「詳しく試算」へ。</small>
               </label>
               <label class="input-field">
                 <span>役員在任年数</span>
                 <input type="number" data-field="officerYears" min="0" step="1" value="25">
                 <em>年</em>
-                <small>法人登記・議事録で確認。代表取締役以外の期間は扱いを個別確認。</small>
+                <small>参考記録。役員在任期間の税務上の扱いは「詳しく試算」で確認してください。</small>
               </label>
               <label class="input-field preset-field">
                 <span>功績倍率</span>
                 <input type="number" data-field="meritMultiplier" min="0" step="0.1" value="3.0">
                 <em>倍</em>
-                <small>役職・功績・同業水準を踏まえた仮置き。過大退職金リスクの一次チェック用。</small>
+                <small>参考記録。この画面では功績倍率法の税務判定をしません。根拠は別途確認してください。</small>
               </label>
               <label class="input-field">
                 <span>退職金原資の既準備額</span>
@@ -335,6 +349,7 @@
                 <em>万円</em>
                 <small>法人内の退職金目的資金・内部留保のうち、実際に使える額だけを入力。</small>
               </label>
+              <label class="input-field"><span>確認済み支払可能額</span><input type="number" data-field="confirmedPayable" min="0" placeholder="未入力"><em>万円</em><small>運転資金・税・返済等を控除した上で、支払いに充てられると資料で確認した額。未確認なら空欄。</small></label>
               <label class="input-field">
                 <span>法人の年次積立余力</span>
                 <input type="number" data-field="corporateAnnualReserve" min="0" value="120">
@@ -376,17 +391,29 @@
           </div>
         </div>
         <ul class="source-list">
-          <li>老後生活費: <a href="https://www.jili.or.jp/research/chousa/10350.html" target="_blank" rel="noopener">生命保険文化センター「生活保障に関する調査」2025年度</a>。最低日常生活費23.9万円/月、ゆとりある生活費39.1万円/月。</li>
+          <li>老後生活費: <a href="https://www.jili.or.jp/lifeplan/lifesecurity/1141.html" target="_blank" rel="noopener">生命保険文化センター「生活保障に関する調査」2025年度</a>。夫婦2人に必要と考える最低日常生活費23.9万円/月、ゆとりある生活費39.1万円/月。初期値45万円は別の面談用仮定です。</li>
           <li>公的年金: <a href="https://www.nenkin.go.jp/oshirase/taisetu/kojin/2026/202604/0401.html" target="_blank" rel="noopener">日本年金機構 令和8年度年金額</a>。老齢基礎年金満額70,608円/月、厚生年金の標準的な夫婦2人分237,279円/月。</li>
-          <li>平均余命: <a href="https://www.mhlw.go.jp/toukei/saikin/hw/life/life24/index.html" target="_blank" rel="noopener">厚生労働省 令和6年簡易生命表</a>。65歳時の平均余命を老後期間の目安に利用。</li>
-          <li>介護費用: <a href="https://www.jili.or.jp/press/2025/10212.html" target="_blank" rel="noopener">生命保険文化センター調査 2025年度速報版</a>の公表値を初期値に分解。</li>
+          <li>計画終了年齢: <a href="https://www.mhlw.go.jp/toukei/saikin/hw/life/life24/index.html" target="_blank" rel="noopener">厚生労働省 令和6年簡易生命表</a>は参考資料。入力した終了年齢を平均余命や安全な終了年齢と同一視しません。</li>
+          <li>介護費用: <a href="https://www.jili.or.jp/lifeplan/lifesecurity/1116.html" target="_blank" rel="noopener">生命保険文化センター「生命保険に関する全国実態調査」2024年度</a>。過去3年間に介護経験がある2人以上世帯の平均は月9.0万円、一時47.2万円、期間55.0か月。2026-09-30確認。既存入力は変更しません。</li>
           <li>退職金税務: <a href="https://www.nta.go.jp/taxes/shiraberu/taxanswer/shotoku/1420.htm" target="_blank" rel="noopener">国税庁タックスアンサー No.1420 退職金を受け取ったとき</a>。退職所得控除等は個別確認。</li>
-          <li>リンク先は公開時点の最新版です。リンク切れや改定があるため、定期確認の運用を前提にしてください。</li>
+          <li>参照情報は2026-09-30時点で確認。統計平均や標準モデルはご本人の受給額・必要額ではありません。</li>
         </ul>
+      </section>
+      <section class="panel evidence-panel">
+        <div class="section-title"><span class="section-index">確認</span><div><h2>金額・前提の根拠</h2><p>「資料確認済み」は出所と確認日を入力した場合だけ有効です。未入力や仮定のままでも試算はできます。</p></div></div>
+        <div id="evidenceGrid" class="evidence-grid"></div>
+        <label class="migration-check"><input type="checkbox" data-field="migrationReviewed">旧データから引き継いだ前提を確認した</label>
       </section>
     </section>
 
     <aside class="result-column" aria-label="試算結果">
+      <section class="summary-panel" id="legacySummaryPanel" hidden>
+        <h2>旧サマリーの参照</h2>
+        <p>このファイルには元の入力値がないため、数値試算へは引き継ぎません。原文は計画JSONに保持します。</p>
+        <p id="legacyImportError" class="initial-warning" hidden></p>
+        <pre id="legacySummaryText" class="legacy-summary-text"></pre>
+        <button type="button" class="primary-button" id="startFromLegacyButton">新規入力で試算を始める</button>
+      </section>
       <section class="summary-panel">
         <div class="summary-head">
           <div>
@@ -401,11 +428,15 @@
           <ul id="precisionNextSteps"></ul>
         </div>
         <p class="initial-warning" id="initialValueWarning" hidden>初期値のまま試算しています。実数値で上書きしてください。</p>
+        <p class="initial-warning" id="inputErrors" hidden></p>
+        <p id="periodDescription" class="period-description"></p>
+        <details id="assessmentReasons" class="assessment-reasons"><summary id="assessmentReasonsTitle">判定理由</summary><div id="assessmentReasonList"></div></details>
+        <div id="fundingConditions" class="funding-conditions"></div>
         <div class="kpi-grid">
           <article>
             <span>必要資金</span>
             <strong id="requiredCapital">-</strong>
-            <small>引退時点の必要額</small>
+            <small>計画期間の途中も残高を維持する最小額</small>
           </article>
           <article>
             <span>個人資産見込</span>
@@ -420,7 +451,7 @@
           <article>
             <span>追加準備</span>
             <strong id="annualPreparation">-</strong>
-            <small>法人側の年額目安</small>
+            <small>準備期間0年なら即時必要額</small>
           </article>
         </div>
         <div class="reverse-equation" aria-label="必要資金の逆算構造">
@@ -451,11 +482,12 @@
           <p class="equation-note" id="equationNote">-</p>
         </div>
       </section>
+      <section class="basis-panel" id="outsideCostsPanel"><h2>計画期間外の予定費用</h2><p id="outsideCostsText"></p></section>
 
       <section class="action-panel choice-panel">
         <div class="chart-title">
           <div>
-            <h2>不足の主因</h2>
+            <h2>不足の所在</h2>
           </div>
           <p>診断結果のみを表示します。打ち手の推奨は行いません。</p>
         </div>
@@ -508,6 +540,7 @@
             <p id="uncheckedCheckCount">未確認 7件</p>
           </div>
         </div>
+        <p class="checklist-note">チェックだけでは資料確認済みにはなりません。重要な金額の出所と確認日は左の根拠欄に記録してください。</p>
         <div class="proposal-checks">
           <label><input type="checkbox" data-field="checkNenkinSelf">ねんきん定期便を確認したか</label>
           <label><input type="checkbox" data-field="checkNenkinSpouse">配偶者の年金加入歴を確認したか</label>
@@ -535,6 +568,7 @@
           <button type="button" class="ghost-button" id="downloadSummaryJsonButton">JSON出力</button>
         </div>
         <textarea id="summaryOutput" class="summary-output" rows="12" readonly></textarea>
+        <pre id="printSummary" class="print-summary" aria-hidden="true"></pre>
       </section>
 
       <section class="basis-panel">
@@ -588,7 +622,7 @@
     <a href="https://www.matsumoto-kaikei.or.jp/" target="_blank" rel="noopener license">税理士法人松本会計事務所</a> ｜
     <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="license noopener">CC BY-NC-SA 4.0</a> ｜
     <a href="/tool-portal/terms.html" target="_blank" rel="noopener">利用条件</a> ｜
-    <span id="build-rev">Rev.4</span>（<span id="last-updated-date"></span>）
+    <span id="build-rev">Rev.5</span>（<span id="last-updated-date"></span>）
   </footer>
 
   <dialog id="calcDialog" class="calc-dialog">
@@ -603,6 +637,7 @@
     <span class="legend-item"><i></i><b></b></span>
   </template>
 
+  <script src="model.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

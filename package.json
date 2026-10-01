@@ -1,0 +1,9 @@
+{
+  "name": "second-life-planner",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "test": "node --test",
+    "build": "node --check model.js && node --check app.js"
+  }
+}

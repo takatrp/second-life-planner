@@ -12,13 +12,20 @@ const fields = {
   annualDream: 240,
   oneTimeEvent: 500,
   familySupport: 300,
-  careMonthly: 8.3,
-  careYears: 5,
-  careOneTime: 74,
+  careMonthly: 9,
+  careMonths: 55,
+  careOneTime: 47.2,
+  careStartAge: 78,
+  careSubject: "self",
   debtAtRetire: 0,
   pensionSelf: 160,
   pensionSelfChecked: 0,
   pensionSpouse: 90,
+  spousePensionStartAge: 65,
+  pensionSelfBasis: "net",
+  pensionSpouseBasis: "net",
+  pensionSelfNetRatio: 100,
+  pensionSpouseNetRatio: 100,
   pensionSpouseChecked: 0,
   annuityAnnual: 120,
   annuityYears: 10,
@@ -28,6 +35,7 @@ const fields = {
   otherIncome: 60,
   retirementReturn: 1,
   inflationRate: 2,
+  priceBasis: "retirement",
   personalAssetsNow: 1500,
   monthlySaving: 20,
   preRetireReturn: 2,
@@ -37,6 +45,7 @@ const fields = {
   officerYears: 25,
   meritMultiplier: 3,
   corporateReserveNow: 800,
+  confirmedPayable: null,
   corporateAnnualReserve: 120,
   insuranceCashAtRetire: 1500,
   guaranteeDebt: 0,
@@ -54,7 +63,8 @@ const fields = {
   checkMeritLimit: false,
   checkGuaranteeDebt: false,
   checkGuaranteeRelease: false,
-  checkInsuranceCash: false
+  checkInsuranceCash: false,
+  migrationReviewed: false
 };
 
 const colors = {
@@ -65,14 +75,18 @@ const colors = {
   line: "#6860a8"
 };
 
-const STORAGE_KEY = "second-life-planner-state-v1";
-const VERSION = "Rev.4";
+const STORAGE_KEY = "second-life-planner-state-v2";
+const LEGACY_STORAGE_KEY = "second-life-planner-state-v1";
+const VERSION = "Rev.5";
 const els = {};
+let currentPlan = { version: PlannerModel.VERSION, state: { ...fields }, sources: structuredClone(PlannerModel.SOURCES) };
+let loadError = "";
+const evidenceLabels = PlannerModel.EVIDENCE_LABELS;
 
 const coreAssumptionFields = [
   "vision", "currentAge", "retireAge", "lifeAge", "pensionStartAge", "hasSpouse", "spouseAge",
   "monthlyLife", "monthlyHousing", "annualMedical", "annualDream", "oneTimeEvent", "familySupport",
-  "careMonthly", "careYears", "careOneTime", "debtAtRetire", "pensionSelf", "pensionSpouse",
+  "careMonthly", "careMonths", "careOneTime", "debtAtRetire", "pensionSelf", "pensionSpouse",
   "annuityAnnual", "annuityYears", "workIncome", "workIncomeType", "workUntilAge", "otherIncome",
   "retirementReturn", "inflationRate", "personalAssetsNow", "monthlySaving", "preRetireReturn",
   "plannedRetirementPay", "retirementNetRatio", "finalMonthlyComp", "officerYears", "meritMultiplier",
@@ -136,16 +150,23 @@ const optionDefinitions = [
 
 document.addEventListener("DOMContentLoaded", () => {
   syncFooterMeta();
+  createEvidenceFields();
 
   document.querySelectorAll("[data-field]").forEach((input) => {
     els[input.dataset.field] = input;
-    input.addEventListener("input", update);
-    input.addEventListener("change", update);
+    input.addEventListener("input", onFieldChange);
+    input.addEventListener("change", onFieldChange);
   });
 
   document.getElementById("saveButton").addEventListener("click", saveState);
+  document.getElementById("exportPlanButton").addEventListener("click", exportPlan);
+  document.getElementById("importPlanInput").addEventListener("change", importPlan);
+  document.getElementById("startFromLegacyButton").addEventListener("click", startFromLegacy);
   document.getElementById("resetButton").addEventListener("click", resetState);
-  document.getElementById("printButton").addEventListener("click", () => window.print());
+  document.getElementById("printButton").addEventListener("click", () => {
+    if (PlannerModel.calculate(readState()).errors.length) return update();
+    generateIssueSummary(); window.print();
+  });
   document.getElementById("closeCalc").addEventListener("click", () => document.getElementById("calcDialog").close());
   document.getElementById("generateSummaryButton").addEventListener("click", generateIssueSummary);
   document.getElementById("downloadSummaryJsonButton").addEventListener("click", downloadSummaryJson);
@@ -170,12 +191,18 @@ function readState() {
     } else if (element.type === "checkbox") {
       state[key] = element.checked;
     } else if (element.tagName === "SELECT") {
-      state[key] = Number(element.value);
+      state[key] = typeof fallback === "string" ? element.value : Number(element.value);
     } else {
-      const value = Number(element.value);
-      state[key] = Number.isFinite(value) ? value : fallback;
+      state[key] = element.value.trim() === "" ? (key === "confirmedPayable" ? null : "") : Number(element.value);
     }
   }
+  state.evidence = {};
+  document.querySelectorAll("[data-evidence]").forEach(input => {
+    const [key, part] = input.dataset.evidence.split(":");
+    (state.evidence[key] ||= {})[part] = input.value;
+  });
+  if (currentPlan.state.migrationWarning) state.migrationWarning = currentPlan.state.migrationWarning;
+  if (currentPlan.state.legacySummaryOnly) state.legacySummaryOnly = true;
   return state;
 }
 
@@ -185,29 +212,132 @@ function writeState(state) {
     if (els[key].type === "checkbox") {
       els[key].checked = Boolean(state[key] ?? fallback);
     } else {
-      els[key].value = state[key] ?? fallback;
+      els[key].value = state[key] ?? (fallback ?? "");
     }
   }
+  document.querySelectorAll("[data-evidence]").forEach(input => {
+    const [key, part] = input.dataset.evidence.split(":");
+    const item=state.evidence?.[key];
+    input.value = part==="status" && item?.status==="verified" && !item.verifiedValue
+      ? "assumed" : item?.[part] || (part === "status" ? "assumed" : "");
+  });
+  document.querySelector(".migration-check").hidden = !state.migrationWarning || state.legacySummaryOnly;
 }
 
 function loadState() {
+  let raw;
   try {
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
-    writeState(saved ? { ...fields, ...saved } : fields);
-  } catch {
+    raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY);
+    currentPlan = raw ? PlannerModel.migrate(raw) : currentPlan;
+    writeState({ ...fields, ...currentPlan.state });
+  } catch (error) {
+    currentPlan = {...currentPlan,legacyOriginal:raw || null};
     writeState(fields);
+    loadError = `保存済みデータを読み込めませんでした。原本は保持しています: ${error.message}`;
   }
 }
 
 function saveState() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(readState()));
-  flashButton("saveButton", "保存済み");
+  const state = readState();
+  const result = PlannerModel.calculate(state);
+  if (result.errors.length && !state.legacySummaryOnly) return update();
+  currentPlan = { ...currentPlan, version: PlannerModel.VERSION, state,
+    sources: currentPlan.sources || structuredClone(PlannerModel.SOURCES) };
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(currentPlan));
+    loadError = "";
+    flashButton("saveButton", "保存済み");
+  } catch (error) { showInputError(`保存できませんでした: ${error.message}`); }
 }
 
 function resetState() {
-  localStorage.removeItem(STORAGE_KEY);
+  currentPlan = {version:PlannerModel.VERSION,state:{...fields},sources:structuredClone(PlannerModel.SOURCES),
+    legacyOriginal:currentPlan.legacyOriginal};
   writeState(fields);
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(currentPlan)); loadError=""; }
+  catch (error) { loadError=`初期化した状態を保存できませんでした: ${error.message}`; }
   update();
+}
+
+function createEvidenceFields() {
+  const container = document.getElementById("evidenceGrid");
+  for (const [key,label] of Object.entries(evidenceLabels)) {
+    const block = document.createElement("div");
+    block.className = "evidence-item";
+    const title = document.createElement("strong");
+    title.textContent = label;
+    block.appendChild(title);
+    const select = document.createElement("select");
+    select.dataset.evidence = `${key}:status`;
+    for (const [value,text] of [["missing","未入力"],["assumed","仮定"],["verified","資料確認済み"]]) {
+      const option = document.createElement("option"); option.value=value; option.textContent=text; select.appendChild(option);
+    }
+    block.appendChild(select);
+    for (const [part,placeholder,type] of [["source","資料・出所","text"],["date","確認日","date"],["note","補足","text"]]) {
+      const input=document.createElement("input"); input.dataset.evidence=`${key}:${part}`;
+      input.type=type; input.placeholder=placeholder; input.setAttribute("aria-label",`${label}の${placeholder}`); block.appendChild(input);
+    }
+    const snapshot=document.createElement("input");
+    snapshot.type="hidden"; snapshot.dataset.evidence=`${key}:verifiedValue`; block.appendChild(snapshot);
+    select.addEventListener("change",()=>{
+      snapshot.value=select.value==="verified"?PlannerModel.evidenceValue(readState(),key):"";
+    });
+    container.appendChild(block);
+  }
+  container.addEventListener("input",update);
+  container.addEventListener("change",update);
+}
+
+function onFieldChange() {
+  const state=readState();
+  for (const [key] of Object.entries(evidenceLabels)) {
+    const status=document.querySelector(`[data-evidence="${key}:status"]`);
+    const snapshot=document.querySelector(`[data-evidence="${key}:verifiedValue"]`);
+    if (status.value==="verified" && snapshot.value!==PlannerModel.evidenceValue(state,key))
+      status.value="assumed";
+  }
+  update();
+}
+
+function exportPlan() {
+  const state=readState();
+  if (PlannerModel.calculate(state).errors.length && !state.legacySummaryOnly) return update();
+  const envelope={...currentPlan,version:PlannerModel.VERSION,state,
+    sources:currentPlan.sources || structuredClone(PlannerModel.SOURCES)};
+  downloadJson(envelope,"second-life-plan.json");
+}
+async function importPlan(event) {
+  const file=event.target.files?.[0];
+  if (!file) return;
+  try {
+    const raw=await file.text();
+    const next=PlannerModel.migrate(raw);
+    const state={...fields,...next.state};
+    const result=PlannerModel.calculate(state);
+    if (result.errors.length && !state.legacySummaryOnly) throw new Error(result.errors.join("、"));
+    currentPlan=next;
+    writeState(state);
+    document.getElementById("legacyImportError").hidden=true;
+    update();
+  } catch (error) { showInputError(`読込できませんでした。現在の計画は変更していません: ${error.message}`); }
+  event.target.value="";
+}
+function startFromLegacy() {
+  const state={...readState(),legacySummaryOnly:false,migrationReviewed:false};
+  currentPlan={...currentPlan,state,sources:structuredClone(PlannerModel.SOURCES)};
+  writeState(state);
+  update();
+}
+function downloadJson(data,filename) {
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a"); a.href=url; a.download=filename; a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+function showInputError(message) {
+  const box=document.getElementById("inputErrors"); box.hidden=false; box.textContent=message;
+  const legacy=document.getElementById("legacyImportError");
+  legacy.hidden=false; legacy.textContent=message;
 }
 
 function flashButton(id, text) {
@@ -235,8 +365,32 @@ function syncFooterMeta() {
 }
 
 function update() {
-  const state = normalize(readState());
-  const result = calculate(state);
+  const state = readState();
+  const resultColumn=document.querySelector(".result-column");
+  if (state.legacySummaryOnly) {
+    resultColumn.classList.remove("is-invalid");
+    resultColumn.classList.add("is-legacy");
+    document.getElementById("legacySummaryPanel").hidden=false;
+    document.getElementById("legacySummaryText").textContent=JSON.stringify(currentPlan.legacySummary,null,2);
+    return;
+  }
+  resultColumn.classList.remove("is-legacy");
+  document.getElementById("legacySummaryPanel").hidden=true;
+  document.getElementById("legacyImportError").hidden=true;
+  const result = PlannerModel.calculate(state);
+  if (result.errors.length) {
+    resultColumn.classList.add("is-invalid");
+    showInputError(result.errors.join(" / "));
+    document.getElementById("statusTitle").textContent = "入力内容を確認してください";
+    document.getElementById("statusPill").textContent = "入力エラー";
+    document.getElementById("statusPill").className = "status-pill bad";
+    for (const id of ["requiredCapital","personalAtRetire","requiredRetirementPay","annualPreparation"])
+      setText(id,"-");
+    return;
+  }
+  resultColumn.classList.remove("is-invalid");
+  document.getElementById("inputErrors").hidden = !loadError;
+  if (loadError) document.getElementById("inputErrors").textContent = loadError;
   renderSummary(result);
   renderFundingChart(result);
   renderBalanceChart(result);
@@ -245,149 +399,39 @@ function update() {
   renderBasis(result);
   renderProposalChecklist(result);
   renderScenarios(state);
-}
-
-function normalize(state) {
-  const yearsToRetire = Math.max(0, state.retireAge - state.currentAge);
-  const retirementYears = Math.max(1, state.lifeAge - state.retireAge);
-  return {
-    ...state,
-    hasSpouse: Number(state.hasSpouse) === 1,
-    yearsToRetire,
-    retirementYears,
-    netRatio: clamp(state.retirementNetRatio / 100, 0.3, 1),
-    preRate: state.preRetireReturn / 100,
-    retireRate: state.retirementReturn / 100,
-    inflationRateDecimal: state.inflationRate / 100
-  };
-}
-
-function calculate(state) {
-  const annualBasicSpend = (state.monthlyLife + state.monthlyHousing) * 12 + state.annualMedical + state.annualDream;
-  const oneTimeAtRetire = state.oneTimeEvent + state.familySupport + state.debtAtRetire;
-  const careReserve = state.careMonthly * 12 * state.careYears + state.careOneTime;
-  const careAge = Math.min(Math.max(state.retireAge + 10, 78), state.lifeAge);
-  const personalAtRetire = futureValue(state.personalAssetsNow, state.monthlySaving * 12, state.preRate, state.yearsToRetire);
-  const retirementTaxLimit = state.finalMonthlyComp * state.officerYears * state.meritMultiplier;
-
-  const cashflows = [];
-  let requiredCapital = oneTimeAtRetire;
-  let incomePv = 0;
-  let spendingPv = oneTimeAtRetire;
-
-  for (let i = 0; i < state.retirementYears; i += 1) {
-    const age = state.retireAge + i;
-    const discount = Math.pow(1 + state.retireRate, i);
-    const inflation = Math.pow(1 + state.inflationRateDecimal, i);
-    const pension = age >= state.pensionStartAge ? state.pensionSelf + (state.hasSpouse ? state.pensionSpouse : 0) : 0;
-    const annuity = i < state.annuityYears ? state.annuityAnnual : 0;
-    const work = age < state.workUntilAge ? state.workIncome : 0;
-    const other = state.otherIncome;
-    const income = pension + annuity + work + other;
-    const care = age === careAge ? careReserve * inflation : 0;
-    const spending = annualBasicSpend * inflation + care;
-    const deficit = Math.max(0, spending - income);
-
-    incomePv += income / discount;
-    spendingPv += spending / discount;
-    requiredCapital += deficit / discount;
-    cashflows.push({ age, income, spending, deficit, pension, annuity, work, other, care, inflation });
-  }
-
-  const requiredNetFromCompany = Math.max(0, requiredCapital - personalAtRetire);
-  const requiredGrossRetirementPay = requiredNetFromCompany / state.netRatio;
-  const plannedNetRetirementPay = state.plannedRetirementPay * state.netRatio;
-  const retirementDesignGap = Math.max(0, requiredGrossRetirementPay - state.plannedRetirementPay);
-  const requiredOverTaxLimit = Math.max(0, requiredGrossRetirementPay - retirementTaxLimit);
-  const plannedOverTaxLimit = Math.max(0, state.plannedRetirementPay - retirementTaxLimit);
-
-  const corporatePreparedGross = futureValue(state.corporateReserveNow, state.corporateAnnualReserve, state.preRate, state.yearsToRetire) + state.insuranceCashAtRetire;
-  const sourceGapForRequired = Math.max(0, requiredGrossRetirementPay - corporatePreparedGross);
-  const annualAdditionalPreparation = state.yearsToRetire > 0
-    ? annualPaymentForFutureValue(sourceGapForRequired, state.preRate, state.yearsToRetire)
-    : sourceGapForRequired;
-
-  const planBalances = simulateBalances(state, cashflows, personalAtRetire + plannedNetRetirementPay, oneTimeAtRetire);
-  const fullBalances = simulateBalances(state, cashflows, personalAtRetire + requiredNetFromCompany, oneTimeAtRetire);
-  const planRunout = planBalances.find((point) => point.balance < 0);
-  const coverageRatio = requiredCapital > 0 ? (personalAtRetire + plannedNetRetirementPay) / requiredCapital : 1;
-
-  return {
-    state,
-    annualBasicSpend,
-    oneTimeAtRetire,
-    careReserve,
-    careAge,
-    personalAtRetire,
-    cashflows,
-    requiredCapital,
-    incomePv,
-    spendingPv,
-    requiredNetFromCompany,
-    requiredGrossRetirementPay,
-    plannedNetRetirementPay,
-    retirementDesignGap,
-    retirementTaxLimit,
-    requiredOverTaxLimit,
-    plannedOverTaxLimit,
-    corporatePreparedGross,
-    sourceGapForRequired,
-    annualAdditionalPreparation,
-    planBalances,
-    fullBalances,
-    planRunout,
-    coverageRatio
-  };
-}
-
-function futureValue(start, annualContribution, rate, years) {
-  if (years <= 0) return start;
-  const grownStart = start * Math.pow(1 + rate, years);
-  if (Math.abs(rate) < 0.00001) {
-    return grownStart + annualContribution * years;
-  }
-  return grownStart + annualContribution * ((Math.pow(1 + rate, years) - 1) / rate);
-}
-
-function annualPaymentForFutureValue(target, rate, years) {
-  if (target <= 0) return 0;
-  if (years <= 0) return target;
-  if (Math.abs(rate) < 0.00001) return target / years;
-  return target * rate / (Math.pow(1 + rate, years) - 1);
-}
-
-function simulateBalances(state, cashflows, startingCapital, oneTimeAtRetire) {
-  let balance = startingCapital - oneTimeAtRetire;
-  return cashflows.map((flow) => {
-    balance *= 1 + state.retireRate;
-    balance += flow.income - flow.spending;
-    return { age: flow.age, balance };
-  });
+  renderIssueSummary(buildIssueSummary(state,result));
 }
 
 function renderSummary(result) {
-  setHtml("requiredCapital", calcValueHtml(yen(result.requiredCapital), "requiredCapital"));
+  setHtml("requiredCapital", calcValueHtml(yenNeed(result.requiredCapital), "requiredCapital"));
   setHtml("personalAtRetire", calcValueHtml(yen(result.personalAtRetire), "personalAtRetire"));
-  setHtml("requiredRetirementPay", calcValueHtml(yen(result.requiredGrossRetirementPay), "requiredRetirementPay"));
-  setHtml("annualPreparation", calcValueHtml(`${yen(result.annualAdditionalPreparation)}/年`, "annualPreparation"));
+  setHtml("requiredRetirementPay", calcValueHtml(yenNeed(result.requiredGrossRetirementPay), "requiredRetirementPay"));
+  setHtml("annualPreparation", calcValueHtml(result.annualAdditionalPreparation === null
+    ? `${yenNeed(result.sourceGapForRequired)} 即時` : `${yenNeed(result.annualAdditionalPreparation)}/年`, "annualPreparation"));
   renderReverseEquation(result);
 
   const statusTitle = document.getElementById("statusTitle");
   const statusPill = document.getElementById("statusPill");
   statusPill.classList.remove("warn", "bad");
 
-  if (result.coverageRatio >= 1) {
-    statusTitle.textContent = "現在案で生活資金を概ね充足";
-    statusPill.textContent = "充足";
-  } else if (result.coverageRatio >= 0.8) {
-    statusTitle.textContent = "退職金設計の微修正が必要";
-    statusPill.textContent = "要調整";
-    statusPill.classList.add("warn");
-  } else {
-    statusTitle.textContent = "今から準備体制の再設計が必要";
-    statusPill.textContent = "不足";
-    statusPill.classList.add("bad");
-  }
+  const labels={shortage:"不足あり",assumed:"仮定・未確認あり",adequate:"設定条件内では充足"};
+  statusTitle.textContent=labels[result.assessment.key];
+  statusPill.textContent=labels[result.assessment.key];
+  if (result.assessment.key==="shortage") statusPill.classList.add("bad");
+  if (result.assessment.key==="assumed") statusPill.classList.add("warn");
+  setText("periodDescription",`${result.state.retireAge}歳から${result.state.lifeAge}歳になるまでの${result.state.retirementYears}年間。年初に収支を計上し、その後で運用益を反映します。年内の入出金時期は簡略化しています。`);
+  const reasons=document.getElementById("assessmentReasonList");
+  reasons.replaceChildren(...result.assessment.reasons.map(reason=>{
+    const p=document.createElement("p");p.textContent=reason;return p;
+  }));
+  document.getElementById("assessmentReasons").hidden=!result.assessment.reasons.length;
+  setText("assessmentReasonsTitle",`判定理由・未確認事項（${result.assessment.reasons.length}件）`);
+  setText("fundingConditions",result.state.plannedRetirementPay>0
+    ? `世帯計画は予定退職金${yen(result.state.plannedRetirementPay)}（額面）が予定どおり支払われた場合の手取り${yen(result.plannedNetRetirementPay)}を含みます。法人の確認済み支払可能額: ${result.confirmedPayable===null?"未入力":yen(result.confirmedPayable)}。${result.companyGap===null?"支払原資は未確認":`法人原資不足 ${yenNeed(result.companyGap)}`}。`:
+      "退職金を使わない計画です。法人原資の確認は判定に含めません。");
+  setText("outsideCostsText",result.careOutside>0
+    ? `${yenNeed(result.careOutside)}。計画期間外の予定介護費用で、必要資金には含めていません。別途確保または期間延長を検討してください。`:
+      "現在の入力では、計画期間外の介護予定費用はありません。");
 }
 
 function renderReverseEquation(result) {
@@ -398,21 +442,21 @@ function renderReverseEquation(result) {
   const retirementShare = need > 0 ? (retirementNet / need) * 100 : 0;
   const surplusPersonal = Math.max(0, result.personalAtRetire - need);
 
-  setHtml("equationNeed", calcValueHtml(yen(need), "requiredCapital"));
+  setHtml("equationNeed", calcValueHtml(yenNeed(need), "requiredCapital"));
   setHtml("equationPersonal", calcValueHtml(yen(personalApplied), "personalAtRetire"));
-  setHtml("equationRetirementNet", calcValueHtml(yen(retirementNet), "requiredRetirementPay"));
+  setHtml("equationRetirementNet", calcValueHtml(yenNeed(retirementNet), "requiredRetirementPay"));
   document.getElementById("equationPersonalBar").style.width = `${clamp(personalShare, 0, 100)}%`;
   document.getElementById("equationRetirementBar").style.width = `${clamp(retirementShare, 0, 100)}%`;
 
   const note = surplusPersonal > 0
     ? `個人資産見込は必要資金を ${yen(surplusPersonal)} 上回るため、必要退職金手取は0円です。`
-    : `必要退職金手取 ${yen(retirementNet)} を額面に直すと、必要退職金 ${yen(result.requiredGrossRetirementPay)} です。`;
+    : `必要退職金手取 ${yenNeed(retirementNet)} を額面に直すと、必要退職金 ${yenNeed(result.requiredGrossRetirementPay)} です。期間中の黒字は翌年へ繰り越します。`;
   setText("equationNote", note);
 }
 
 function openCalculationBreakdown(key) {
-  const state = normalize(readState());
-  const result = calculate(state);
+  const state = readState();
+  const result = PlannerModel.calculate(state);
   const item = getCalculationBreakdowns(result)[key];
   if (!item) return;
 
@@ -428,82 +472,65 @@ function openCalculationBreakdown(key) {
 
 function getCalculationBreakdowns(result) {
   const { state } = result;
-  const yearlyDeficitPv = Math.max(0, result.requiredCapital - result.oneTimeAtRetire);
-  const personalStartGrowth = state.personalAssetsNow * Math.pow(1 + state.preRate, state.yearsToRetire);
-  const personalContributionGrowth = result.personalAtRetire - personalStartGrowth;
-  const netShortage = Math.max(0, result.requiredCapital - result.personalAtRetire);
-  const corporateReserveGrowth = futureValue(state.corporateReserveNow, state.corporateAnnualReserve, state.preRate, state.yearsToRetire);
-
   return {
     requiredCapital: {
       title: "必要資金の計算過程",
-      note: "退職時点で用意しておきたい生活資金です。各年の不足額を退職時点の価値に割り戻して、一時支出を加えています。",
+      note: "引退時点の最小資金です。各年の黒字を繰り越し、どの年も残高が負にならない額を二分探索（許容差0.000001万円）で求めます。",
       lines: [
-        `年間基本支出 = (基本生活費 ${yen(state.monthlyLife)} + 住居費 ${yen(state.monthlyHousing)}) x 12 + 医療 ${yen(state.annualMedical)} + 趣味等 ${yen(state.annualDream)} = ${yen(result.annualBasicSpend)}/年`,
-        `退職時一時支出 = 退職時イベント ${yen(state.oneTimeEvent)} + 子・孫支援 ${yen(state.familySupport)} + 退職時借入返済 ${yen(state.debtAtRetire)} = ${yen(result.oneTimeAtRetire)}`,
-        `介護予備 = 月額 ${man(state.careMonthly)} x 12か月 x ${state.careYears}年 + 一時費用 ${yen(state.careOneTime)} = ${yen(result.careReserve)}。${result.careAge}歳時点にインフレ反映して計上`,
-        `各年不足額 = max(0, インフレ反映後支出 - 公的年金・年金保険・仕事収入・その他収入)。老後運用利回り ${pct(state.retirementReturn)} で退職時点に割引`,
-        `各年不足額の現在価値合計 ${yen(yearlyDeficitPv)} + 退職時一時支出 ${yen(result.oneTimeAtRetire)} = 必要資金 ${yen(result.requiredCapital)}`
+        `試算期間 = ${state.retireAge}歳から${state.lifeAge}歳になるまでの${state.retirementYears}年`,
+        `退職時一時支出 ${yen(result.oneTimeAtRetire)} を初期資金から控除`,
+        `各年の年初残高にその年の収入を加え、支出を引き、その後に運用率 ${pct(state.retirementReturn)} を適用`,
+        `介護費用は期間内 ${yen(result.careInside)}、期間外 ${yen(result.careOutside)}。期間外は必要資金に含めません`,
+        `すべての年初収支後と年末の残高が負にならない最小の初期資金 = ${yen(result.requiredCapital)}`
       ]
     },
     personalAtRetire: {
       title: "個人資産見込の計算過程",
-      note: "現在の個人金融資産と、引退までの個人積立を現役中利回りで積み上げた見込額です。",
+      note: "現役中の積立は毎年末に行う簡易計算です。",
       lines: [
         `引退までの年数 = 引退予定年齢 ${state.retireAge}歳 - 現在年齢 ${state.currentAge}歳 = ${state.yearsToRetire}年`,
-        `現在資産の成長 = ${yen(state.personalAssetsNow)} x (1 + ${pct(state.preRetireReturn)})^${state.yearsToRetire} = ${yen(personalStartGrowth)}`,
-        `毎年の積立 = 個人の月額積立 ${yen(state.monthlySaving)} x 12か月 = ${yen(state.monthlySaving * 12)}/年`,
-        `積立の将来価値 = 年 ${yen(state.monthlySaving * 12)} を ${pct(state.preRetireReturn)} で${state.yearsToRetire}年積立 = ${yen(personalContributionGrowth)}`,
-        `現在資産の成長 ${yen(personalStartGrowth)} + 積立の将来価値 ${yen(personalContributionGrowth)} = 個人資産見込 ${yen(result.personalAtRetire)}`
+        `現在資産 ${yen(state.personalAssetsNow)} と年末積立 ${yen(state.monthlySaving*12)}/年、利回り ${pct(state.preRetireReturn)}`,
+        `引退時の個人資産見込 = ${yen(result.personalAtRetire)}`
       ]
     },
     requiredRetirementPay: {
       title: "必要退職金の計算過程",
-      note: "個人資産で不足する手取り額から、退職金の額面を逆算しています。税務上の損金算入目安も同時に確認します。",
+      note: "手取り率は仮定です。税額・損金算入は詳しく試算で確認してください。",
       lines: [
-        `手取り不足額 = max(0, 必要資金 ${yen(result.requiredCapital)} - 個人資産見込 ${yen(result.personalAtRetire)}) = ${yen(netShortage)}`,
-        `必要退職金 = 手取り不足額 ${yen(netShortage)} ÷ 退職金手取り率 ${pct(state.retirementNetRatio)} = ${yen(result.requiredGrossRetirementPay)}`,
-        `予定退職金との差額 = max(0, 必要退職金 ${yen(result.requiredGrossRetirementPay)} - 予定退職金 ${yen(state.plannedRetirementPay)}) = ${yen(result.retirementDesignGap)}`,
-        `功績倍率法の目安 = 最終報酬月額 ${yen(state.finalMonthlyComp)} x 在任年数 ${state.officerYears}年 x 功績倍率 ${state.meritMultiplier} = ${yen(result.retirementTaxLimit)}`,
-        `損金算入目安の超過額 = max(0, 必要退職金 ${yen(result.requiredGrossRetirementPay)} - 功績倍率法の目安 ${yen(result.retirementTaxLimit)}) = ${yen(result.requiredOverTaxLimit)}`
+        `必要な退職金手取り = max(0, ${yen(result.requiredCapital)} - ${yen(result.personalAtRetire)}) = ${yen(result.requiredNetFromCompany)}`,
+        `必要な額面 = 手取り ${yen(result.requiredNetFromCompany)} ÷ 仮定手取り率 ${pct(state.retirementNetRatio)} = ${yen(result.requiredGrossRetirementPay)}`,
+        `予定額面 ${yen(state.plannedRetirementPay)}、確認済み法人原資 ${result.confirmedPayable===null?"未入力":yen(result.confirmedPayable)}`
       ]
     },
     annualPreparation: {
       title: "追加準備の計算過程",
-      note: "必要退職金に対して、法人側で準備できる退職金原資が不足する場合の年額積立目安です。",
+      note: "法人原資の予測額は確認済み支払可能額とは別です。実際の支払能力は法人CFで確認してください。",
       lines: [
-        `法人内準備の将来価値 = 既準備額 ${yen(state.corporateReserveNow)} と年次積立 ${yen(state.corporateAnnualReserve)}/年を ${pct(state.preRetireReturn)} で${state.yearsToRetire}年積立 = ${yen(corporateReserveGrowth)}`,
-        `退職時に使える法人原資 = 法人内準備の将来価値 ${yen(corporateReserveGrowth)} + 保険等の退職時見込額 ${yen(state.insuranceCashAtRetire)} = ${yen(result.corporatePreparedGross)}`,
-        `原資不足 = max(0, 必要退職金 ${yen(result.requiredGrossRetirementPay)} - 法人原資 ${yen(result.corporatePreparedGross)}) = ${yen(result.sourceGapForRequired)}`,
-        state.yearsToRetire > 0
-          ? `追加準備年額 = 原資不足 ${yen(result.sourceGapForRequired)} を ${pct(state.preRetireReturn)} で${state.yearsToRetire}年積み立てて作る年額 = ${yen(result.annualAdditionalPreparation)}/年`
-          : `引退予定が現在以前のため、追加準備年額 = 原資不足 ${yen(result.sourceGapForRequired)} をそのまま即時準備額として表示 = ${yen(result.annualAdditionalPreparation)}/年`,
-        `既存の法人年次積立余力 ${yen(state.corporateAnnualReserve)}/年とは別に、上記の不足を埋めるための追加目安として確認`
+        `法人準備見込 ${yen(result.corporatePreparedGross)} は既準備・将来積立・保険等の仮定合計`,
+        `必要退職金額面との差 ${yen(result.sourceGapForRequired)}`,
+        state.yearsToRetire>0 ? `追加積立の年額目安 ${yen(result.annualAdditionalPreparation)}/年`:
+          `追加の準備期間なし。即時必要額 ${yen(result.sourceGapForRequired)}`
       ]
     }
   };
 }
 
 function renderFundingChart(result) {
-  const totalNeed = result.spendingPv;
-  let remaining = totalNeed;
-  const pensionValue = Math.min(Math.max(0, result.incomePv), remaining);
-  remaining -= pensionValue;
+  let remaining = result.requiredCapital;
   const personalValue = Math.min(Math.max(0, result.personalAtRetire), remaining);
   remaining -= personalValue;
   const retirementValue = Math.min(Math.max(0, result.plannedNetRetirementPay), remaining);
   remaining -= retirementValue;
   const planFunding = [
-    { label: "公的年金等", value: pensionValue, color: colors.pension },
     { label: "個人資産", value: personalValue, color: colors.personal },
-    { label: "予定退職金", value: retirementValue, color: colors.retirement }
+    { label: "予定退職金の手取り（条件付き）", value: retirementValue, color: colors.retirement }
   ];
   const gap = Math.max(0, remaining);
   const data = gap > 0 ? [...planFunding, { label: "未充足", value: gap, color: colors.gap }] : planFunding;
 
   drawDonut(document.getElementById("fundingChart"), data);
   renderLegend(data);
-  setText("coverageText", `現在案の充足率 ${Math.round(result.coverageRatio * 100)}%`);
+  setText("coverageText", `退職金が予定どおり支払われた場合の世帯不足 ${yenNeed(result.householdGap)}。年金等は年次収支に反映済み。`);
 }
 
 function renderLegend(data) {
@@ -513,7 +540,7 @@ function renderLegend(data) {
   data.forEach((item) => {
     const node = template.content.cloneNode(true);
     node.querySelector("i").style.background = item.color;
-    node.querySelector("b").textContent = `${item.label} ${yen(item.value)}`;
+    node.querySelector("b").textContent = `${item.label} ${item.label==="未充足"?yenNeed(item.value):yen(item.value)}`;
     legend.appendChild(node);
   });
 }
@@ -524,7 +551,7 @@ function renderBalanceChart(result) {
   if (result.planRunout) {
     setText("runoutText", `${result.planRunout.age}歳で資金がマイナス`);
   } else {
-    setText("runoutText", `平均余命時点 ${yen(endBalance)} 残`);
+    setText("runoutText", `計画終了直前の年末 ${yen(endBalance)} 残（予定退職金受領を仮定）`);
   }
 }
 
@@ -554,7 +581,7 @@ function renderAccuracyStatus(result) {
   box.querySelector("strong").textContent = status.label;
   box.querySelector("span").textContent = status.text;
   nextSteps.innerHTML = "";
-  const visibleItems = unchecked.slice(0, 4);
+  const visibleItems = unchecked.slice(0, 2);
   visibleItems.forEach((item) => {
     const li = document.createElement("li");
     li.textContent = item.label;
@@ -565,12 +592,12 @@ function renderAccuracyStatus(result) {
     li.textContent = `ほか ${unchecked.length - visibleItems.length}件。下の「前提確認チェック」を確認してください。`;
     nextSteps.appendChild(li);
   }
-  if (!unchecked.length) {
+  if (!unchecked.length && !result.assessment.reasons.length) {
     const li = document.createElement("li");
-    li.textContent = "解除条件はすべて満たしています。証憑の保存状況を確認してください。";
+    li.textContent = "設定条件内の試算です。将来の結果を保証するものではありません。";
     nextSteps.appendChild(li);
   }
-  summaryPanel.classList.toggle("is-provisional", status.key === "draft");
+  summaryPanel.classList.toggle("is-provisional", false);
 
   const usingInitialValues = isUsingInitialValues(result.state);
   warning.hidden = !usingInitialValues;
@@ -585,29 +612,11 @@ function renderProposalChecklist(result) {
 }
 
 function getAccuracyStatus(state) {
-  const checkedCount = proposalChecks.filter((item) => Boolean(state[item.key])).length;
-  if (checkedCount === proposalChecks.length) {
-    return {
-      key: "ready",
-      className: "ready",
-      label: "提案可能水準",
-      text: "下の前提確認チェックはすべて確認済みです。提案書化の前に証憑保存を確認してください。"
-    };
-  }
-  if (checkedCount >= 3) {
-    return {
-      key: "meeting",
-      className: "meeting",
-      label: "面談用試算",
-      text: "一部確認済みです。提案可能水準にするには、下の前提確認チェックを埋めてください。"
-    };
-  }
-  return {
-    key: "draft",
-    className: "draft",
-    label: "仮置き試算",
-    text: "下の前提確認チェックに未確認項目があります。この状態の数字は提案には使えません。"
-  };
+  const assessment=PlannerModel.calculate(state).assessment;
+  return {key:assessment.key,className:assessment.key==="shortage"?"draft":assessment.key==="assumed"?"meeting":"ready",
+    label:{error:"入力エラー",shortage:"不足あり",assumed:"仮定・未確認あり",adequate:"設定条件内では充足"}[assessment.key],
+    text:assessment.reasons.length?`${assessment.reasons.length}件の確認・対応事項があります。判定理由を開いて確認してください。`:
+      "設定条件内の試算であり、将来の結果を保証しません。"};
 }
 
 function getUncheckedProposalChecks(state) {
@@ -615,7 +624,7 @@ function getUncheckedProposalChecks(state) {
 }
 
 function isUsingInitialValues(state) {
-  const defaults = normalize({ ...fields });
+  const defaults = { ...fields, hasSpouse: true };
   return coreAssumptionFields.every((key) => {
     if (!(key in fields)) return true;
     return String(state[key] ?? "") === String(defaults[key] ?? "");
@@ -623,43 +632,18 @@ function isUsingInitialValues(state) {
 }
 
 function diagnoseShortageCause(result) {
-  const state = result.state;
-  const baseGap = getOverallShortage(result);
-  if (baseGap <= 0) {
-    return {
-      title: "不足は小さい状態です",
-      text: "現在の入力では、生活資金と退職金原資の不足は大きくありません。未確認事項の確認後に再判定します。"
-    };
-  }
-
-  const pensionRisk = estimatePensionRisk(state, baseGap);
-  const scores = [
-    { key: "personal", label: "個人資産の積立不足", value: Math.max(0, result.requiredCapital * 0.45 - result.personalAtRetire) },
-    { key: "corporate", label: "法人準備不足", value: result.sourceGapForRequired },
-    { key: "pension", label: "公的年金期待過大", value: pensionRisk },
-    { key: "spending", label: "支出過大", value: estimateReduction(state, (draft) => reduceSpending(draft, 0.9)) }
-  ].sort((a, b) => b.value - a.value);
-
-  const top = scores[0];
-  const second = scores[1];
-  if (!top || top.value <= 0) {
-    return {
-      title: "不足の主因は特定しにくい状態です",
-      text: "不足は複数の前提に薄く分散しています。各入力値の確認後に再判定します。"
-    };
-  }
-
-  if (second && second.value >= top.value * 0.85) {
-    return {
-      title: `不足は${top.label}と${second.label}の複合要因です`,
-      text: `寄与度は ${top.label} ${yen(top.value)}、${second.label} ${yen(second.value)} が近い水準です。`
-    };
-  }
-
-  return {
-    title: `不足の主因は${top.label}です`,
-    text: `現在の入力では、${top.label}の寄与度が最も大きい状態です。`
-  };
+  const household=result.householdGap>PlannerModel.TOLERANCE;
+  const company=result.companyGap!==null && result.companyGap>PlannerModel.TOLERANCE;
+  if (household && company) return {title:"世帯と法人の両方に不足",
+    text:`世帯の生活資金は ${yenNeed(result.householdGap)}、法人の確認済み支払原資は ${yenNeed(result.companyGap)} 不足。別々の指標で、合算しません。`};
+  if (household) return {title:"世帯の生活資金が不足",
+    text:`予定退職金を受け取れた場合でも ${yenNeed(result.householdGap)} 不足します。`};
+  if (company) return {title:"法人の支払原資が不足",
+    text:`予定退職金の受領を仮定した世帯計画は足りますが、確認済み法人原資は ${yenNeed(result.companyGap)} 不足しています。`};
+  if (result.companyGap===null) return {title:"法人の支払原資は未確認",
+    text:"予定退職金の支払可能額を資料で確認するまで、世帯の充足は条件付きです。"};
+  return {title:"設定条件内の不足はありません",
+    text:"根拠・期間外費用と将来の変動を確認してください。"};
 }
 
 function estimateOptionEffects(state) {
@@ -685,28 +669,10 @@ function estimateOptionEffects(state) {
   };
 }
 
-function estimatePensionRisk(state, baseGap) {
-  const pensionAdjusted = normalize({
-    ...state,
-    pensionSelf: state.pensionSelf * 0.75,
-    pensionSpouse: state.pensionSpouse * 0.75
-  });
-  const stressedGap = getOverallShortage(calculate(pensionAdjusted));
-  const stressImpact = Math.max(0, stressedGap - baseGap);
-  const unverifiedFactor = (!state.pensionSelfChecked || (state.hasSpouse && !state.pensionSpouseChecked)) ? 1.25 : 0.55;
-  return stressImpact * unverifiedFactor;
-}
-
 function estimateReduction(state, mutate) {
-  const base = calculate(normalize({ ...state }));
   const draft = { ...state };
   mutate(draft);
-  const adjusted = calculate(normalize(draft));
-  return Math.max(0, getOverallShortage(base) - getOverallShortage(adjusted));
-}
-
-function getOverallShortage(result) {
-  return Math.max(0, result.retirementDesignGap) + Math.max(0, result.sourceGapForRequired);
+  return PlannerModel.compare(state,draft);
 }
 
 function reduceSpending(draft, ratio) {
@@ -719,7 +685,14 @@ function reduceSpending(draft, ratio) {
 }
 
 function formatEffect(value) {
-  return value > 0 ? `不足額を概算で ${yen(value)} 圧縮` : "不足額への直接影響は小さい";
+  if (value.errors) return "この条件では比較できません。期間・利回りを確認してください。";
+  const effect=value.householdImprovement;
+  const household=effect>PlannerModel.TOLERANCE?`世帯不足が ${yen(effect)} 減少`:
+    effect< -PlannerModel.TOLERANCE?`世帯不足が ${yen(-effect)} 増加`:
+      "世帯不足への直接影響なし";
+  const company=value.companyImprovement===null?"法人支払原資は未確認":
+    `確認済み法人原資不足の変化 ${yen(value.companyImprovement)}`;
+  return `${value.evaluationAge}歳時点換算: ${household}。${company}。法人準備見込との差の変化 ${yen(value.forecastPreparationImprovement)}（合算しません）`;
 }
 
 function renderBasis(result) {
@@ -731,13 +704,14 @@ function renderBasis(result) {
   validationList.innerHTML = "";
 
   const formulaItems = [
-    `年間支出: (${yen(result.state.monthlyLife)} + ${yen(result.state.monthlyHousing)}) x 12 + 医療 ${yen(result.state.annualMedical)} + 趣味等 ${yen(result.state.annualDream)} = ${yen(result.annualBasicSpend)}/年。老後期間中はインフレ率 ${pct(result.state.inflationRate)} で増加。`,
-    `介護予備: 月額 ${man(result.state.careMonthly)} x 12か月 x ${result.state.careYears}年 + 一時費用 ${yen(result.state.careOneTime)} = ${yen(result.careReserve)}。${result.careAge}歳時点に一括計上。`,
-    `必要資金: 各年の不足額を老後運用利回り ${pct(result.state.retirementReturn)} で退職時点へ割引し、退職時イベント・家族支援・個人借入返済を加算 = ${yen(result.requiredCapital)}。`,
-    `個人資産見込: 現在資産 ${yen(result.state.personalAssetsNow)} と年 ${yen(result.state.monthlySaving * 12)} の積立を、現役中利回り ${pct(result.state.preRetireReturn)} で${result.state.yearsToRetire}年積立 = ${yen(result.personalAtRetire)}。`,
-    `必要退職金: (必要資金 ${yen(result.requiredCapital)} - 個人資産見込 ${yen(result.personalAtRetire)}) ÷ 手取り率 ${pct(result.state.retirementNetRatio)} = ${yen(result.requiredGrossRetirementPay)}。`,
-    `功績倍率法の目安: 最終報酬月額 ${yen(result.state.finalMonthlyComp)} x 在任年数 ${result.state.officerYears}年 x 功績倍率 ${result.state.meritMultiplier} = ${yen(result.retirementTaxLimit)}。`,
-    `法人原資: 既準備額 ${yen(result.state.corporateReserveNow)} と年 ${yen(result.state.corporateAnnualReserve)} の積立見込 + 保険等 ${yen(result.state.insuranceCashAtRetire)} = ${yen(result.corporatePreparedGross)}。不足分を年額換算すると ${yen(result.annualAdditionalPreparation)}/年。`
+    `期間: ${result.state.retireAge}歳から${result.state.lifeAge}歳になるまでの${result.state.retirementYears}年。各年の年初残高＋収入－支出に、その後の運用益を反映。`,
+    `価格基準: ${result.state.priceBasis==="current"?"現在の購買力":"退職時点の名目額"}。支出は年率${pct(result.state.inflationRate)}で増額、年金・その他収入は固定額。`,
+    `介護: 期間内 ${yen(result.careInside)}、期間外 ${yen(result.careOutside)}。対象者 ${result.state.careSubject==="spouse"?"配偶者":"本人"}、開始 ${result.state.careStartAge}歳、期間 ${result.state.careMonths}か月。`,
+    `必要資金: 年次CFの途中を含め残高が負にならない最小の引退時資金 ${yen(result.requiredCapital)}。黒字は翌年へ繰越。`,
+    `個人資産見込 ${yen(result.personalAtRetire)}。必要退職金の額面 ${yen(result.requiredGrossRetirementPay)} は手取り率 ${pct(result.state.retirementNetRatio)} の仮定から逆算。`,
+    `予定退職金の額面 ${yen(result.state.plannedRetirementPay)}。確認済み支払可能額 ${result.confirmedPayable===null?"未入力":yen(result.confirmedPayable)}。法人不足 ${result.companyGap===null?"未確認":yen(result.companyGap)}。`,
+    result.state.yearsToRetire>0?`法人準備見込との差を埋める追加積立 ${yen(result.annualAdditionalPreparation)}/年。`:
+      `追加の準備期間なし。法人準備見込との差 ${yen(result.sourceGapForRequired)} を即時準備額として表示。`
   ];
 
   formulaItems.forEach((text) => appendCheckItem(formulaList, "", text));
@@ -748,33 +722,13 @@ function renderBasis(result) {
 
 function buildValidationChecks(result) {
   const checks = [];
-
-  checks.push(result.requiredOverTaxLimit > 0
-    ? { className: "bad", text: `必要退職金が功績倍率法の目安を ${yen(result.requiredOverTaxLimit)} 超過。逆算額をそのまま期待値にしない。` }
-    : { className: "", text: "必要退職金は功績倍率法の目安内。報酬月額・在任年数・功績倍率の根拠を保存。" });
-
-  checks.push(result.state.pensionSelfChecked
-    ? { className: "", text: "本人年金額は確認済み扱い。ねんきん定期便等の金額で入力されている前提。" }
-    : { className: "warn", text: "本人年金額が未確認。参考値160万円のまま提案書に進めない。" });
-
-  if (result.state.hasSpouse) {
-    checks.push(result.state.pensionSpouseChecked
-      ? { className: "", text: "配偶者年金は加入歴確認済み扱い。専業主婦、役員、勤務歴、加給年金・振替加算を確認。" }
-      : { className: "warn", text: "配偶者年金が未確認。加入歴、加給年金・振替加算、役員報酬歴を確認。" });
-  }
-
-  checks.push(result.state.workIncome > 0 && result.state.workIncomeType === 1 && result.state.workUntilAge > result.state.pensionStartAge
-    ? { className: "warn", text: "年金開始後も給与・役員報酬が残るため、在職老齢年金の調整対象になる可能性。" }
-    : { className: "", text: "退職後収入と在職老齢年金の重なりは大きな警告なし。収入区分は面談で確認。" });
-
-  checks.push(result.state.inflationRate >= 2
-    ? { className: "warn", text: `インフレ率 ${pct(result.state.inflationRate)} を反映中。支出は年ごとに増えるため、必要資金が大きくなりやすい。` }
-    : { className: "", text: `インフレ率 ${pct(result.state.inflationRate)} で試算中。物価上振れ時の感度も確認。` });
-
-  checks.push(result.state.guaranteeDebt > 0 && result.state.guaranteeReleaseStatus !== 2
-    ? { className: "warn", text: "経営者保証の解除が未確定。引退後の会社依存リスクとして、生活資金とは別枠で確認。" }
-    : { className: "", text: "経営者保証は大きな未解消リスクなし。保証契約・金融機関交渉状況を証憑で確認。" });
-
+  for (const reason of result.assessment.reasons)
+    checks.push({className:result.assessment.key==="shortage"?"bad":"warn",text:reason});
+  if (result.state.workIncome>0 && result.state.workIncomeType===1 && result.state.workUntilAge>result.state.pensionStartAge)
+    checks.push({className:"warn",text:"年金受給と給与・役員報酬が重なるため、在職老齢年金を個別確認してください。"});
+  if (result.state.guaranteeDebt>0 && result.state.guaranteeReleaseStatus!==2)
+    checks.push({className:"warn",text:"経営者保証の解除は未確定です。法人借入とは別に確認してください。"});
+  if (!checks.length) checks.push({className:"",text:"設定条件内の試算です。将来の資金や運用を保証するものではありません。"});
   return checks;
 }
 
@@ -786,38 +740,47 @@ function appendCheckItem(list, className, text) {
 }
 
 function generateIssueSummary() {
-  const summary = buildIssueSummary();
-  document.getElementById("summaryOutput").value = formatIssueSummaryText(summary);
+  if (PlannerModel.calculate(readState()).errors.length) return update();
+  renderIssueSummary(buildIssueSummary());
+}
+
+function renderIssueSummary(summary) {
+  const text = formatIssueSummaryText(summary);
+  document.getElementById("summaryOutput").value = text;
+  document.getElementById("printSummary").textContent = text;
 }
 
 function downloadSummaryJson() {
+  if (PlannerModel.calculate(readState()).errors.length) return update();
   const summary = buildIssueSummary();
-  const blob = new Blob([JSON.stringify(summary, null, 2)], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = "second-life-issue-summary.json";
-  link.click();
-  URL.revokeObjectURL(url);
+  downloadJson(summary,"second-life-issue-summary.json");
 }
 
-function buildIssueSummary() {
-  const state = normalize(readState());
-  const result = calculate(state);
+function buildIssueSummary(state = readState(), result = PlannerModel.calculate(state)) {
   const diagnosis = diagnoseShortageCause(result);
   const selectedOptions = optionDefinitions.filter((option) => state[option.key]).map((option) => option.title);
   const unchecked = getUncheckedProposalChecks(state);
+  const common = PlannerModel.report(result).summary;
 
   return {
     title: "論点整理サマリー",
-    status: getAccuracyStatus(state).label,
+    status: {error:"入力エラー",shortage:"不足あり",assumed:"仮定・未確認あり",adequate:"設定条件内では充足"}[result.assessment.key],
+    calculation: common,
+    period: common.period,
+    basis: state.priceBasis === "current" ? "現在の購買力" : "退職時点の名目額",
+    assumptions: result.assessment.reasons,
+    sources: currentPlan.sources,
     hasUncheckedItems: unchecked.length > 0,
     vision: state.vision || "未入力",
     result: {
-      requiredCapital: yen(result.requiredCapital),
+      requiredCapital: yenNeed(result.requiredCapital),
       personalAtRetire: yen(result.personalAtRetire),
-      requiredRetirementPay: yen(result.requiredGrossRetirementPay),
-      annualPreparation: `${yen(result.annualAdditionalPreparation)}/年`
+      requiredRetirementPay: yenNeed(result.requiredGrossRetirementPay),
+      annualPreparation: result.annualAdditionalPreparation === null
+        ? `${yenNeed(result.sourceGapForRequired)} 即時` : `${yenNeed(result.annualAdditionalPreparation)}/年`,
+      householdGap: yenNeed(result.householdGap),
+      companyGap: result.companyGap === null ? "未確認" : yenNeed(result.companyGap),
+      careOutside: yenNeed(result.careOutside)
     },
     shortageCause: diagnosis.title,
     consideredOptions: selectedOptions.length ? selectedOptions : ["未選択"],
@@ -836,10 +799,21 @@ function formatIssueSummaryText(summary) {
     summary.vision,
     "",
     "■ 試算結果",
+    `期間: ${summary.period}`,
+    `価格基準: ${summary.basis}（収入は固定額）`,
     `必要資金: ${summary.result.requiredCapital}`,
     `個人資産見込: ${summary.result.personalAtRetire}`,
     `必要退職金: ${summary.result.requiredRetirementPay}`,
     `追加準備: ${summary.result.annualPreparation}`,
+    `予定退職金を受け取れた場合の世帯不足: ${summary.result.householdGap}`,
+    `法人の確認済み支払原資不足: ${summary.result.companyGap}`,
+    `期間外の予定介護費用（必要資金に含まず）: ${summary.result.careOutside}`,
+    `総合判定: ${summary.status}`,
+    `判定理由: ${summary.assumptions.length?summary.assumptions.join(" / "):"設定条件内の試算"}`,
+    `介護費用の参照元: ${summary.sources?.care?.title || "未記録"}（${summary.sources?.care?.year || "年不明"}、${summary.sources?.care?.checkedAt || "確認日不明"}）`,
+    `参照URL: ${summary.sources?.care?.url || summary.sources?.care?.reference?.url || "未記録"}`,
+    "年初に収支を計上し、その後に運用益を反映。年内の入出金時期は簡略化しています。",
+    "設定条件内の試算であり、将来の資金や運用を保証しません。",
     "",
     "■ 不足の主因",
     summary.shortageCause,
@@ -868,7 +842,7 @@ function renderScenarios(state) {
   grid.innerHTML = "";
 
   scenarios.forEach((scenario) => {
-    const adjusted = normalize({
+    const adjusted = {
       ...state,
       monthlyLife: state.monthlyLife * scenario.spend,
       monthlyHousing: state.monthlyHousing * scenario.spend,
@@ -876,11 +850,11 @@ function renderScenarios(state) {
       annualDream: state.annualDream * scenario.spend,
       retirementReturn: state.retirementReturn + scenario.returnShift,
       inflationRate: scenario.inflation
-    });
-    const result = calculate(adjusted);
+    };
+    const result = PlannerModel.calculate(adjusted);
     const card = document.createElement("article");
     card.className = "scenario-card";
-    card.innerHTML = `<span>${scenario.name}</span><strong>${yen(result.requiredGrossRetirementPay)}</strong>`;
+    card.innerHTML = `<span>${scenario.name}</span><strong>${result.errors.length?"条件を確認":yen(result.requiredGrossRetirementPay)}</strong>`;
     grid.appendChild(card);
   });
 }
@@ -1013,6 +987,11 @@ function yen(value) {
   const rounded = Math.round(value);
   if (!Number.isFinite(rounded)) return "-";
   return `${rounded.toLocaleString("ja-JP")}万円`;
+}
+
+function yenNeed(value) {
+  if (!Number.isFinite(value)) return "-";
+  return `${Math.ceil(Math.max(0,value)-PlannerModel.TOLERANCE).toLocaleString("ja-JP")}万円`;
 }
 
 function man(value) {

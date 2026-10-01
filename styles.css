@@ -244,6 +244,17 @@ label {
   font-weight: 900;
   vertical-align: middle;
 }
+.input-column .stat-field > span::after {
+  content: "※調査平均";
+  display: inline-flex;
+  margin-left: 6px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  color: var(--blue);
+  background: #eaf3fa;
+  font-size: 10px;
+  font-weight: 900;
+}
 
 .field-grid .input-field {
   position: relative;
@@ -900,6 +911,57 @@ footer.mk-mini a {
   font-size: 12px;
 }
 
+.file-button {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.evidence-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.evidence-item {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 10px;
+}
+
+.evidence-item strong { font-size: 12px; }
+.migration-check { display: flex; align-items: center; gap: 8px; margin-top: 12px; font-size: 12px; font-weight: 700; }
+.migration-check input { width: auto; height: auto; }
+.migration-check[hidden] { display: none; }
+.checklist-note { color: var(--muted); font-size: 12px; line-height: 1.55; }
+.evidence-item input,
+.evidence-item select { height: 36px; padding: 6px 8px; font-size: 12px; }
+.period-description,
+.assessment-reasons,
+.funding-conditions,
+#outsideCostsText { font-size: 12px; line-height: 1.6; }
+.assessment-reasons { color: var(--red); }
+.assessment-reasons summary { cursor: pointer; font-size: 12px; font-weight: 700; }
+.assessment-reasons[hidden] { display: none; }
+.assessment-reasons p { margin: 2px 0; }
+.funding-conditions { margin: 10px 0; padding: 9px; border-left: 4px solid var(--amber); background: #fff8eb; }
+.print-summary { display: none; }
+.result-column.is-invalid > :not(.summary-panel),
+.result-column.is-invalid .kpi-grid,
+.result-column.is-invalid .reverse-equation,
+.result-column.is-invalid .precision-status,
+.result-column.is-invalid .assessment-reasons,
+.result-column.is-invalid .funding-conditions,
+.result-column.is-invalid .period-description { display: none; }
+.result-column.is-legacy > :not(#legacySummaryPanel) { display: none; }
+.legacy-summary-text { max-height: 360px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 11px; }
+#legacySummaryPanel[hidden] { display: none; }
+
 .chart-title p {
   text-align: right;
 }
@@ -1035,6 +1097,7 @@ canvas {
 }
 
 @media (max-width: 720px) {
+  .evidence-grid { grid-template-columns: 1fr; }
   .topbar__inner {
     align-items: flex-start;
     flex-direction: column;
@@ -1084,6 +1147,9 @@ canvas {
 }
 
 @media print {
+  .summary-actions,
+  .summary-output { display: none; }
+  .print-summary { display: block; white-space: pre-wrap; overflow-wrap: anywhere; font: 11px/1.5 sans-serif; }
   .topbar__actions {
     display: none;
   }
