@@ -79,9 +79,9 @@ const colors = {
 
 const STORAGE_KEY = "second-life-planner-state-v2";
 const LEGACY_STORAGE_KEY = "second-life-planner-state-v1";
-const VERSION = "Rev.6";
+const VERSION = "Rev.6.1";
 const els = {};
-let currentPlan = { version: PlannerModel.VERSION, state: { ...fields }, sources: structuredClone(PlannerModel.SOURCES) };
+let currentPlan = { version: PlannerModel.VERSION, state: { ...fields, evidence:{} }, sources: structuredClone(PlannerModel.SOURCES) };
 let loadError = "";
 let comparisonBaseline = "";
 let rememberedExpenseTotal = fields.monthlyExpenseTotal;
@@ -290,8 +290,8 @@ function saveState() {
 }
 
 function resetState() {
-  currentPlan = {version:PlannerModel.VERSION,state:{...fields},sources:structuredClone(PlannerModel.SOURCES),
-    legacyOriginal:currentPlan.legacyOriginal};
+  currentPlan = {version:PlannerModel.VERSION,state:{...fields,evidence:{}},sources:structuredClone(PlannerModel.SOURCES),
+    legacyOriginal:currentPlan.legacyOriginal,legacyV2Original:currentPlan.legacyV2Original};
   writeState(fields);
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(currentPlan)); loadError=""; }
   catch (error) { loadError=`初期化した状態を保存できませんでした: ${error.message}`; }

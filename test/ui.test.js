@@ -188,3 +188,12 @@ test('invalid optional references cannot produce a plan that its own loader reje
   for(const key of ['finalMonthlyComp','officerYears','meritMultiplier','guaranteeDebt'])h.elements[key].value='';
   h.run('saveState(); loadState();');assert.equal(h.run('readState().guaranteeDebt'),'');
 });
+
+
+test('reset creates a complete evidence envelope and reloads successfully',()=>{
+  const h=harness();h.run('currentPlan.legacyV2Original="original v2"; resetState();');
+  const saved=JSON.parse(h.storage.get('second-life-planner-state-v2'));
+  assert.deepEqual(saved.state.evidence,{});assert.equal(saved.legacyV2Original,'original v2');
+  assert.doesNotThrow(()=>model.migrate(JSON.stringify(saved)));
+  h.run('loadState()');assert.equal(h.run('loadError'),'');
+});

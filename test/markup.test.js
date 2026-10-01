@@ -20,7 +20,9 @@ test('markup has every referenced ID and unique form fields', () => {
   const defaults = vm.runInContext('fields', context);
   assert.deepEqual(Object.keys(defaults).filter(key=>!fields.includes(key)), []);
   assert.deepEqual(model.calculate({...defaults,evidence:{}}).errors, []);
-  assert.ok(html.indexOf('src="model.js"') < html.indexOf('src="app.js"'));
+  assert.ok(html.indexOf('src="model.js?rev=6.1"') > 0);
+  assert.ok(html.indexOf('src="model.js?rev=6.1"') < html.indexOf('src="app.js?rev=6.1"'));
+  assert.ok(html.includes('href="styles.css?rev=6.1"'));
 });
 
 test('printable summary carries the same period, status and outside costs', () => {

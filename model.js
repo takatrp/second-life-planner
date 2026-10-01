@@ -445,7 +445,18 @@
       if (!isRecord(data.state)) throw new Error('状態データがありません');
       // Partial historical migrations are supported only if their entire envelope
       // exactly matches a fresh migration of the preserved, original legacy JSON.
-      if (!exactLegacyMigration(data)) validateSavedState(data.state);
+      if (!exactLegacyMigration(data)) {
+        if (!hasOwn(data.state,'evidence')) {
+          // Rev.5 reset saved complete numeric inputs without an evidence object.
+          // Validate every other required field before adding only empty evidence.
+          validateSavedState({...data.state,evidence:{}});
+          const warning='旧v2保存データに根拠情報がありません。保存済みの数値を保持し、未確認の前提として読み込みました。';
+          return {...data,state:{...data.state,evidence:{},migrationReviewed:false,
+            migrationWarning:[data.state.migrationWarning,warning].filter(value=>typeof value==='string' && value.trim()).join(' ')},
+            legacyV2Original:raw};
+        }
+        validateSavedState(data.state);
+      }
       return data;
     }
     return migrateLegacy(data,raw);

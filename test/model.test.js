@@ -361,7 +361,7 @@ test('v2 requires every model field before any defaults can be applied', () => {
   const state=base({expenseMode:'total',monthlyExpenseTotal:10});
   const envelope={version:2,state,sources:{custom:'retained'}};
   assert.deepEqual(model.migrate(JSON.stringify(envelope)),envelope);
-  for (const key of Object.keys(state).filter(key=>key!=='expenseMode')) {
+  for (const key of Object.keys(state).filter(key=>!['expenseMode','evidence'].includes(key))) {
     const incomplete=structuredClone(envelope);
     delete incomplete.state[key];
     assert.throws(()=>model.migrate(JSON.stringify(incomplete)),undefined,`missing ${key}`);
@@ -372,6 +372,53 @@ test('v2 requires every model field before any defaults can be applied', () => {
   assert.equal(loaded.state.monthlyExpenseTotal,undefined);
   assert.equal(model.calculate(loaded.state).annualBasicSpend,12.3456789*12);
   assert.equal(model.calculate(loaded.state).state.expenseMode,'breakdown');
+});
+
+test('complete Rev.5 reset-produced v2 without evidence preserves numbers as unverified', () => {
+  // Snapshot of the predecessor's fields/resetState shape: no expense-mode or
+  // evidence properties were written by that reset operation.
+  const state=base({
+    vision:'夫婦で健康に過ごし、年に数回は旅行へ行ける状態を維持したい。会社に過度に依存せず、退職後の生活費を見える化しておきたい。',
+    currentAge:50,retireAge:65,lifeAge:88,hasSpouse:1,spouseAge:48,
+    monthlyLife:45,annualMedical:35,annualDream:240,oneTimeEvent:500,familySupport:300,
+    careMonthly:9,careMonths:55,careOneTime:47.2,pensionSelf:160,pensionSelfChecked:0,
+    pensionSpouse:90,pensionSpouseChecked:0,annuityAnnual:120,annuityYears:10,
+    workIncome:120,workIncomeType:0,workUntilAge:70,otherIncome:60,
+    retirementReturn:1,inflationRate:2,personalAssetsNow:1500,monthlySaving:20,preRetireReturn:2,
+    plannedRetirementPay:2500,retirementNetRatio:85,finalMonthlyComp:120,officerYears:25,meritMultiplier:3,
+    corporateReserveNow:800,corporateAnnualReserve:120,insuranceCashAtRetire:1500,
+    guaranteeDebt:0,guaranteeReleaseStatus:0,optionSpendReview:false,optionRetireLater:false,
+    optionWorkIncome:false,optionPersonalSaving:false,optionCorporateReserve:false,optionInsuranceReserve:false,
+    selectedDirection:'',checkNenkinSelf:false,checkNenkinSpouse:false,checkRetirementRule:false,
+    checkMeritLimit:false,checkGuaranteeDebt:false,checkGuaranteeRelease:false,checkInsuranceCash:false,
+    migrationReviewed:false
+  });
+  delete state.evidence;
+  const envelope={version:2,state,sources:structuredClone(model.SOURCES)};
+  const raw=JSON.stringify(envelope);
+  const migrated=model.migrate(raw);
+  assert.equal(migrated.legacyV2Original,raw);
+  assert.deepEqual(migrated.sources,envelope.sources);
+  for (const [key,value] of Object.entries(state)) assert.deepEqual(migrated.state[key],value);
+  assert.deepEqual(migrated.state.evidence,{});
+  assert.match(migrated.state.migrationWarning,/旧v2.*根拠情報がありません.*未確認/);
+  assert.equal(migrated.state.migrationReviewed,false);
+  assert.equal(migrated.state.expenseMode,undefined);
+  assert.equal(migrated.state.monthlyExpenseTotal,undefined);
+  for (const key of Object.keys(model.EVIDENCE_LABELS)) assert.equal(model.verified(migrated.state,key),false);
+  const result=model.calculate(migrated.state);
+  assert.equal(result.errors.length,0);
+  assert.equal(result.requiredCapital,model.calculate({...state,evidence:{}}).requiredCapital);
+  assert.notEqual(result.assessment.key,'adequate');
+  assert.ok(result.assessment.reasons.includes(migrated.state.migrationWarning));
+  assert.deepEqual(model.migrate(JSON.stringify(migrated)),migrated);
+  assert.equal(JSON.stringify(envelope),raw);
+  for (const key of ['personalAssetsNow','pensionSelf','confirmedPayable','hasSpouse','priceBasis']) {
+    const incomplete=structuredClone(envelope); delete incomplete.state[key];
+    assert.throws(()=>model.migrate(JSON.stringify(incomplete)),undefined,`missing ${key} without evidence`);
+  }
+  for (const patch of [{monthlyLife:'45'},{personalAssetsNow:null},{retirementReturn:-100},{evidence:null},{evidence:[]}])
+    assert.throws(()=>model.migrate(JSON.stringify({...envelope,state:{...state,...patch}})));
 });
 
 test('v2 rejects nonfinite, out-of-range, wrong-type and malformed evidence values', () => {
